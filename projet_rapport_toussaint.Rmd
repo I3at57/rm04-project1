@@ -1,0 +1,37 @@
+---
+title: "Projet-MT15"
+author: "Baptiste Toussaint"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+# Block de code utilise pour l'initialisation du rapport
+
+# Chunk de code utile pour la compilation du markdown
+knitr::opts_chunk$set(echo = TRUE)
+
+#packages utiles en R
+library(tidyverse, warn.conflicts = FALSE)
+
+# Chargements de fonctions personnelles rédigée dans le cadre du projet
+source("./fonctions_sdf.R")
+```
+
+
+
+## Exercice 2
+
+On a un système $S$ à $n$ composants $iid$ de loi exponentielle. Avec
+: $\lambda = 0.1(jour^{-1})$ en configuration parallèle.
+
+Pour simuler un instant de panne $S$ unique l'on peut procéder ainsi :
+```
+1. On simule n réalisation $T_1,...,T_n$ aléatoires de la loi exponentielle
+2. On calcule $max(T_1,...,T_n)$
+```
+
+```{r fonctions}
+
+```
+
