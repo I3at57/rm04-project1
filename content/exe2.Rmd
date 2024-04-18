@@ -1,7 +1,7 @@
 ---
 output:
-  pdf_document: default
   html_document: default
+  pdf_document: default
 ---
 ```{r exercice2-lib, message=FALSE, warning=FALSE, include=FALSE}
 library(ggplot2, warn.conflicts = FALSE)

@@ -711,6 +711,50 @@ sprintf(message_mttf_simule_a, simulation)</code></pre>
 </div>
 <div id="partie-2" class="section level2">
 <h2>Partie 2</h2>
+<p>Dans le cas de ce dernier système en redondance bas niveau, les
+composants <span class="math inline">\(A\)</span> suivent une loi de
+Weibull <span class="math inline">\(W(\theta=100,\beta=1.5)\)</span> et
+les composants B suivent un lois normale : <span class="math inline">\(N(\mu = 250, \sigma = 20)\)</span>.</p>
+<p>Dans ce cas, en reprenant le résultat du système en redondance
+bas-niveau, on a :</p>
+<p><span class="math display">\[
+  R_{sys_{7}} = (2R_A (t) - R_A (t)^2)(2R_B (t) - R_B (t)^2)
+\]</span></p>
+<p>En plus d’être pénible, le calcul de la fonction de survie <span class="math inline">\(R_B\)</span> fait intervenir la fonction d’erreur
+de Gauss <span class="math inline">\(erf(x)\)</span> car la fonction de
+répartition de la loi normale n’est pas clairement définie.</p>
+<p>Il n’est donc pas possible d’obtenir une <span class="math inline">\(MTTF\)</span> théorique par le calcul et l’on
+passera alors par la simulation.</p>
+<p>On a : <span class="math display">\[
+T_{sys_{7}} = min(max(T_A,T_A&#39;),max(T_B,T_B&#39;))
+\]</span></p>
+<pre class="r"><code>panne_comp_norm &lt;- function(mu = 0, sigma = 1) {
+    return(rnorm(1, mean = mu, sd = sigma))
+}
+
+panne_comp_weibull &lt;- function(theta = 0.1, beta = 1) {
+    return(rweibull(1, scale = theta, shape = beta))
+}
+
+exe3_sys6_panne &lt;- function(param = list()) {
+
+  min(
+    max(panne_comp_weibull(param$theta,param$beta),
+        panne_comp_weibull(param$theta,param$beta)),
+    max(panne_comp_norm(param$mu,param$sigma),
+        panne_comp_norm(param$mu,param$sigma))
+  ) %&gt;% return()
+  
+}</code></pre>
+<p>On peut alors simuler le <span class="math inline">\(MTTF\)</span>
+:</p>
+<pre class="r"><code>simulation &lt;- replicate(
+  p,exe3_sys6_panne(list(theta = 100, beta = 1.5, mu = 250, sigma = 20))) %&gt;% mean()
+
+sprintf(message_mttf_simule_j, simulation)</code></pre>
+<pre><code>## [1] &quot;MTTF simulé en jours : 122.632615&quot;</code></pre>
+<p>On a un <span class="math inline">\(MTTF\)</span> égal à 44760
+jours.</p>
 </div>
 </div>
 
