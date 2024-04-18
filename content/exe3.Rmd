@@ -1,0 +1,476 @@
+---
+output:
+  pdf_document: default
+  html_document: default
+---
+
+
+```{r exercice3-lib, message=FALSE, warning=FALSE, include=FALSE}
+knitr::opts_chunk$set(cache = TRUE)
+
+library(ggplot2, warn.conflicts = FALSE)
+library(magrittr, warn.conflicts = FALSE)
+```
+
+```{r exercice3-clean-memory, message=FALSE, warning=FALSE, include=FALSE}
+# Pour régler la génération aléatoire et conserver les mêmes
+# valeurs à la compilation
+set.seed(54684)
+
+# Block de code pour effacer le contenu de la mémoire, utile à la compilation
+rm(list = ls())
+```
+
+\newpage
+
+# Exercice 3
+
+## Partie 1
+
+Dans cette première partie nous allons étudier 6 systèmes différents :
+
+- le système élémentaire simple A/B ;
+- le système avec B en redondance uniquement ;
+- le système en redondance haut-niveau ;
+- le système en redondance bas niveau ;
+- le système en redondance passive haut-niveau ;
+- le système en pont.
+
+Pour chacun de ces systèmes nous allons :
+
+- calculer l'expression de $R_{sys}$ et $MTTF_{sys}$ ;
+- effectuer l'application numérique pour trouver la valeur du $MTTF_{sys}$ ;
+- simuler une panne du système ;
+- simuler $p$ panne du système pour calculer une approximation du $MTTF_{sys}$.
+
+```{r exe3-fonctions-utiles}
+panne_comp_exp <- function(lambda = 0.1) {
+    
+    # Simule la date de panne d'un composant de loi exponentielle
+    # et de paramètre lambda. date en annnée
+    # Revient à renommer la fonctions le base de R pour plus de lisibilité dans
+    # le rapport
+    
+    return(rexp(1,lambda))
+}
+```
+
+
+### Système élémentaire simple A/B \
+
+
+```{r exercice3-data}
+# Données 
+lambda_A = 1 # ans-1
+lambda_B = 5 # ans-1
+
+# nombre de réplications
+p = 10000
+
+message_mttf_simule_a = "MTTF simulé en années : %f"
+message_mttf_simule_j = "MTTF simulé en jours : %f"
+```
+
+
+Dans un premier temps a un système simple avec deux composants $A$ et $B$ en série.
+
+Ce cas est simple puisqu'on a :
+$$
+MTTF_{sys} = \frac{1}{\sum_{i \in C} \lambda_i}
+$$
+
+On a :
+
+- $T_{sys_{1}} = min(T_A,T_B)$ ;
+- $R_{sys_{1}} = e^{-(\lambda_A + \lambda_B)t}$ ;
+- $MTTF_{sys_{1}} = \frac{1}{\lambda_A + \lambda_B}$ ;
+- $[A.N] MTTF_{sys_{1}} = \frac{1}{6} ans^{-1} \simeq 60.83 j^{-1}$
+
+On peut simuler ce système :
+```{r exe3-sys1-panne}
+exe3_sys1_panne <- function(rate_A, rate_B) {
+    
+    # Retourne la date de panne d'un système en série de deux composants A
+    # Et B de loi exponentielle.
+    
+    return(min(panne_comp_exp(rate_A),panne_comp_exp(rate_B)))
+}
+```
+
+Dans ce cas on peut maintenant estimer le $MTTF$ de ce système par simulation :
+```{r exe3-sys1-mttf}
+simulation <- replicate(p,exe3_sys1_panne(lambda_A,lambda_B)) %>% mean()
+
+sprintf(message_mttf_simule_a, simulation)
+sprintf(message_mttf_simule_j, simulation * 365)
+```
+
+### Système avec B en redondance uniquement \
+
+On a donc un système série/parallèle. Dans ce cas :
+
+- $T_{sys_{2}} = min(T_A ,max(T_B , T_{B}'))$
+
+- $R_{sys_{2}} = e^{-\lambda_A t}(2e^{-\lambda_B t} - e^{-2\lambda_B t})$
+  $= 2e^{-(\lambda_A + \lambda_B)t}-e^{-(2\lambda_B + \lambda_A)t}$
+
+- $MTTF_{sys_{2}} = \frac{2}{\lambda_A + \lambda_B} - \frac{1}{2\lambda_B +\lambda_A}$
+
+- $[A.N] MTTF_{sys_{2}} \simeq 88.48j$
+
+Si l'on fait l'application numérique on a en théorie :
+```{r}
+# MTTF théorique en jours
+((2/(5+1))-(1/(2*5+1)))*365
+```
+
+Le système tombe en moyenne en panne après 88.48 jours.
+
+Par la simulation :
+```{r exe3-sys2-panne}
+exe3_sys2_panne <- function(rate_A,rate_B) {
+    min(panne_comp_exp(rate_A),
+        max(panne_comp_exp(rate_B),panne_comp_exp(rate_B))) %>%
+        return()
+}
+```
+
+
+```{r exe3-sys2-mttf}
+simulation <- replicate(p,exe3_sys2_panne(lambda_A,lambda_B)) %>% mean()
+
+sprintf(message_mttf_simule_a, simulation)
+sprintf(message_mttf_simule_j, simulation * 365)
+```
+
+On retrouve bien un résultat proche de la valeur théorique.
+
+### Système en redondance haut-niveau \
+
+Dans ce cas on a un système parallèle/série avec :
+
+- $T_{sys_{3}} = max(min(T_A,T_B),min(T_{A}',T_{B}'))$
+- $R_{sys_{3}} = 2e^{-(\lambda_A+\lambda_B)t}-e^{-2(\lambda_A+\lambda_B)t}$
+- $MTTF_{sys_{3}} = \frac{2}{\lambda_A+\lambda_B} - \frac{1}{2(\lambda_A + \lambda_B)}$
+- $[A.N] MTTF_{sys_{3}} = \frac{2}{3} - \frac{1}{12} = 0.25ans^{-1} = 91.25j^{-1}$
+
+Dans ce cas on a un $MTTF$ théorique de :
+```{r}
+(2/(lambda_A+lambda_B))-(1/(2*(lambda_A+lambda_B))) # En ans
+((2/(lambda_A+lambda_B))-(1/(2*(lambda_A+lambda_B))))*365 # En jours
+```
+
+Par la simulation on trouve :
+```{r exe3-sys3-panne}
+exe3_sys3_panne <- function(rate_A,rate_B) {
+    max(
+        min(panne_comp_exp(rate_A),panne_comp_exp(rate_B)),
+        min(panne_comp_exp(rate_A),panne_comp_exp(rate_B))
+    ) %>%
+        return()
+}
+```
+
+```{r exe3-sys3-mttf}
+simulation <- replicate(p,exe3_sys3_panne(lambda_A,lambda_B)) %>% mean()
+
+sprintf(message_mttf_simule_a, simulation)
+sprintf(message_mttf_simule_j, simulation * 365)
+```
+
+### Système en redondance bas niveau \
+
+Dans ce cas on a un système parallèle/série avec :
+
+
+- $\begin{aligned}
+T_{sys_{4}} = min(max(T_A,T_{A}'),max(T_B,T_{B}'))
+\end{aligned}$
+
+
+- $\begin{aligned}
+R_{sys_{4}}(t) & = (1-(1-R_A(t))^2)(1-(1-R_B (t))^2) \\
+        & = (R_A (t)^2-2R_A(t))(R_B (t)^2-2R_B(t)) \\
+        & = e^{-2(\lambda_A + \lambda_B)t} -
+            2e^{-(2\lambda_A+\lambda_B)t} -
+            2e^{-(\lambda_A + 2 \lambda_B)t} +
+            4e^{-(\lambda_A + \lambda_B)t}
+\end{aligned}$
+
+
+- $\begin{aligned}
+MTTF_{sys_{4}} & = \frac{4}{\lambda_A + \lambda_B} -
+\frac{2}{\lambda_A + 2\lambda_B} - \frac{2}{2\lambda_A + \lambda_B} +
+\frac{1}{2(\lambda_A + \lambda_B)}
+\end{aligned}$
+
+
+- $\begin{aligned}
+    [A.N] MTTF_{sys_{4}} & = \frac{4}{6} - \frac{2}{11} - \frac{2}{7} +
+    \frac{1}{12} \\
+    & \simeq  0.2824 ans\\
+    & \simeq 103.10j
+\end{aligned}$
+
+\
+
+```{r}
+(4/(lambda_A+lambda_B))-(2/(lambda_A+2*lambda_B))-(2/(2*lambda_A+lambda_B))+
+    (1/(2*(lambda_A+lambda_B))) # En ans
+((4/(lambda_A+lambda_B))-(2/(lambda_A+2*lambda_B))-(2/(2*lambda_A+lambda_B))+
+    (1/(2*(lambda_A+lambda_B)))
+)*365 # En jours
+```
+
+Par la simulation on trouve :
+
+```{r exe3-sys4-panne}
+exe3_sys4_panne <- function(rate_A,rate_B) {
+    min(
+        max(panne_comp_exp(rate_A),panne_comp_exp(rate_A)),
+        max(panne_comp_exp(rate_B),panne_comp_exp(rate_B))
+    ) %>%
+        return()
+}
+```
+
+```{r exe3-sys4-mttf}
+simulation <- replicate(p,exe3_sys4_panne(lambda_A,lambda_B)) %>% mean()
+
+sprintf(message_mttf_simule_a, simulation)
+sprintf(message_mttf_simule_j, simulation * 365)
+```
+
+### Système en redondance passive haut-niveau \
+
+Ce système peut être assimilé à deux système élémentaires A/B (système n°1) mit
+en redondance passive.
+
+Dans ce cas on a :
+
+- $T_{sys_{5}} = min(T_A, T_B) + min(T_A',T_B')$
+
+Le calcul de $R_{sys_{5}}$ est plus complexe puisqu'il faut conditionner selon
+la valeur de panne du premier système.
+
+On pose : $T_{sys_{5}} = X + Y$ avec $X = min(T_A,T_B)$ et Y = min(T_A',T_B')$.
+Attention, dans ce cas $X$ et $Y$ ont la même loi, identique à celle 
+du système n°1 vu plus haut. Donc :
+$R_X = R_Y = R_{sys_{1}} = e^{-(\lambda_A + \lambda_B)t}$.
+
+On a alors :
+
+$\begin{aligned}
+P(T_{sys_{5}} \geq t) & = P(X + Y \geq t) \\
+                      & = P(X \geq t)P(Y \geq t-X | X \geq t) +
+                      P(X \leq t)P(Y \leq t-X | X \leq t) \\
+                      & On \space a : P(Y \geq t-X | X \geq t) \space
+                      car X \geq t \Rightarrow t-X \leq 0 \space et
+                      P(Y \geq 0) = 1 \space car \space \Omega_Y =
+                      \mathbb{R}^+ \\
+                      &= R_{X}(t) + \int_{u \in \Omega_{X},u \leq t}
+                      R_{Y}(t-u)f_{X}(u)du \\
+                      & = e^{-(\lambda_A + \lambda_B)t} + 
+                      \int_{0}^{t} e^{-(\lambda_A + \lambda_B)(t-u)}
+                      (\lambda_A + \lambda_B)e^{-(\lambda_A + \lambda_B)u}du \\
+                      &= e^{-(\lambda_A + \lambda_B)t} + 
+                      \int_{0}^{t}
+                      (\lambda_A + \lambda_B)e^{-(\lambda_A + \lambda_B)u}du \\
+                      &= e^{-(\lambda_A + \lambda_B)} + (\lambda_A + \lambda_B)
+                      e^{-(\lambda_A + \lambda_B)t}t\\
+                      &= e^{-(\lambda_A + \lambda_B)}(1+(\lambda_A + \lambda_B)t)
+\end{aligned}$
+
+On peut calculer le $MTTF_{sys_{5}}$ (On pose $\psi = \lambda_A + \lambda_B$):
+
+$\begin{aligned}
+  MTTF_{sys_{5}} & = \int_{0}^{+\infty}
+  e^{-\psi t}(1+\psi t)dt \\
+  & = \left[ (1+\psi t)(-\frac{1}{\psi}e^{-\psi t}) \right]_{0}^{\infty} -
+  \int_{0}^{\infty}\psi(-\frac{1}{\psi}e^{-\psi t})dt \\
+  &= -\frac{1}{\psi} \left[ e^{-\psi t} + \psi e^{-\psi t}t \right]_{0}^{\infty}+
+  \int_{0}^{\infty}e^{-\psi t}dt \\
+  & = \frac{1}{\psi}-\left[ -\frac{1}{\psi} e^{-\psi t} \right]_{0}^{\infty} \\
+  & = \frac{1}{\psi} - \frac{1}{\psi}(0-1) \\
+  & = \frac{2}{\psi} = \frac{2}{\lambda_1 + \lambda_B} = 2 MTTF_{sys_{1}}.
+\end{aligned}$
+
+On a alors :
+
+$\begin{aligned}
+  [A.N] \space MTTF_{sys_{5}} &=
+      & = \frac{2}{6} = \frac{1}{3}ans^ \simeq 121.67j
+\end{aligned}$
+
+Par la simulation on trouve :
+
+```{r exe3-sys5-panne}
+exe3_sys5_panne <- function(rate_A,rate_B) {
+    min(panne_comp_exp(rate_A),panne_comp_exp(rate_B)) +
+        min(panne_comp_exp(rate_A),panne_comp_exp(rate_B)) %>%
+        return()
+}
+```
+
+```{r exe3-sys5-mttf}
+simulation <- replicate(p,exe3_sys5_panne(lambda_A,lambda_B)) %>% mean()
+
+sprintf(message_mttf_simule_a, simulation)
+sprintf(message_mttf_simule_j, simulation * 365)
+```
+
+
+### Système en pont avec $\lambda_C = \lambda_B$
+
+Dans ce système en pont, on trouve au centre un composant $C$ de loi identique à
+$B$ donc $\lambda_C = \lambda_B$.
+
+[Système pont](../img/exe3-system.png)
+
+Dans ce cas plusieurs options s'offrent à nous.
+
+Pour calculer la valeur de $R_{sys_{6}}$ il faut passer par un conditionnement
+selon la valeur du composant $C$
+
+- Si $C$ est en marche alors on a $R_{sys_{6}} (t) = R_{sys_{4}} (t)$
+- Si $C$ est panne alors on a $R_{sys_{6}} (t) = R_{sys_{4}} (t)$
+
+On a alors :
+
+$\begin{aligned}
+  R_{sys_{6}}(t) & = P(T_{sys_{6}} \geq t) = P(T_C \geq t)P(T_{sys_{4}} \geq t)+
+  P(T_C \leq t)P(T_{sys_{3}} \geq t) \\
+  & = R_C (t) R_{sys_{4}} (t) + (1-R_{C} (t)) R_{sys_{3}} (t) \\
+  & = 2e^{-(\lambda_A + 2\lambda_B)t} + 2e^{-(2\lambda_A + 3\lambda_B)t} +
+  2e^{-(\lambda_A + \lambda_B)t} - 2e^{-(\lambda_A + 3 \lambda_B)t} -
+  3 e^{-(\lambda_A + \lambda_B) t}
+\end{aligned}$
+
+Dans ce cas on a :
+
+$$
+  MTTF_{sys_{6}} = \frac{2}{\lambda_A + 2 \lambda_B} +
+  \frac{2}{2\lambda_A + 3\lambda_B} +
+  \frac{2}{\lambda_A + \lambda_B} -
+  \frac{2}{\lambda_A + 3 \lambda_B} - 
+  \frac{3}{2(\lambda_A + \lambda_B)}
+$$
+
+Soit :
+
+$\begin{aligned}
+  [A.N] MTTF_{sys_{6}} & = \frac{2}{11} + \frac{2}{17} + \frac{2}{6} -
+  \frac{2}{16} - \frac{3}{12} \\
+  & = \simeq 0.2578 ans \simeq 94.10 jours
+\end{aligned}$
+
+On remarque alors que :
+
+$$
+MTTF_{sys_{5}} > 
+MTTF_{sys_{4}} > 
+MTTF_{sys_{6}} > 
+MTTF_{sys_{3}} > 
+MTTF_{sys_{2}} > 
+MTTF_{sys_{1}}
+$$
+
+Si l'on utilise la simulation pour retrouver ce résultat on a alors :
+
+$$
+  T_{sys_{6}} = max (min(T_A,T_B),
+    min(T_A,T_B',T_C),
+    min(T_A',T_B'),
+    min(T_A',T_B,T_C))
+$$
+
+```{r exe3-sys6-panne}
+exe3_sys6_panne <- function(rate_A,rate_B) {
+
+A1 <- panne_comp_exp(rate_A)
+A2 <- panne_comp_exp(rate_A)
+B1 <- panne_comp_exp(rate_B)
+B2 <- panne_comp_exp(rate_B)
+C <- panne_comp_exp(rate_B)
+
+  max(
+      min(A1,B1),
+      min(A1,B2,C),
+      min(A2,B2),
+      min(A2,B1,C)
+  ) %>% return()
+  
+}
+```
+
+```{r exe3-sys6-mttf}
+simulation <- replicate(p,exe3_sys6_panne(lambda_A,lambda_B)) %>% mean()
+
+sprintf(message_mttf_simule_a, simulation)
+sprintf(message_mttf_simule_j, simulation * 365)
+```
+
+## Partie 2
+
+Dans le cas de ce dernier système en redondance bas niveau, les composants $A$ suivent une 
+loi de Weibull $W(\theta=100,\beta=1.5)$ et les composants B
+suivent un lois normale : $N(\mu = 250, \sigma = 20)$.
+
+Dans ce cas, en reprenant le résultat du système en redondance bas-niveau, on a :
+
+$$
+  R_{sys_{7}} = (2R_A (t) - R_A (t)^2)(2R_B (t) - R_B (t)^2)
+$$
+
+En plus d'être pénible, le calcul de la fonction de survie $R_B$ fait intervenir
+la fonction d'erreur de Gauss $erf(x)$ car la fonction de répartition de la 
+loi normale n'est pas clairement définie.
+
+Il n'est donc pas possible d'obtenir une $MTTF$ théorique par le calcul et l'on
+passera alors par la simulation.
+
+On a :
+$$
+T_{sys_{7}} = min(max(T_A,T_A'),max(T_B,T_B'))
+$$
+
+
+```{r exe3-sys7-fonctions-utiles}
+panne_comp_norm <- function(mu = 0, sigma = 1) {
+    return(rnorm(1, mean = mu, sd = sigma))
+}
+
+panne_comp_weibull <- function(theta = 0.1, beta = 1) {
+    return(rweibull(1, scale = theta, shape = beta))
+}
+
+exe3_sys6_panne <- function(param = list()) {
+
+  min(
+    max(panne_comp_weibull(param$theta,param$beta),
+        panne_comp_weibull(param$theta,param$beta)),
+    max(panne_comp_norm(param$mu,param$sigma),
+        panne_comp_norm(param$mu,param$sigma))
+  ) %>% return()
+  
+}
+```
+
+On peut alors simuler le $MTTF$ :
+```{r exe3-sys7-mttf}
+simulation <- replicate(
+  p,exe3_sys6_panne(list(theta = 100, beta = 1.5, mu = 250, sigma = 20))) %>% mean()
+
+sprintf(message_mttf_simule_j, simulation)
+```
+
+On a un $MTTF$ égal à 44760 jours.
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,6 @@
+.*_cache
+.*_files
+.*.html
+
+.Rhistory
+.*.log

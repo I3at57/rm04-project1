@@ -1,0 +1,807 @@
+---
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r exercice4-setup, message=FALSE, warning=FALSE, include=FALSE}
+knitr::opts_chunk$set(cache = TRUE)
+```
+
+```{r exe4-library, include=FALSE}
+library(ggplot2, warn.conflicts = FALSE) # Pour les graphiques
+library(magrittr, warn.conflicts = FALSE) # Pour l'opérateur pipe : %>%
+library(dplyr, warn.conflicts = FALSE) # Pour la manipulation de dataframe
+library(goft, warn.conflicts = FALSE)
+library(EWGoF)
+```
+
+```{r exercice4-clean-memory, message=FALSE, warning=FALSE, include=FALSE}
+# Pour régler la génération aléatoire et conserver les mêmes
+# valeurs à la compilation
+set.seed(54684)
+
+# Block de code pour effacer le contenu de la mémoire, utile à la compilation
+rm(list = ls())
+```
+
+\newpage
+
+# Exercice 4
+
+## Partie 1 : Simulation
+
+Les données pour cet exercice sont stockées dans le fichier `RM04data.csv`.
+Commençons par charger ces données.
+
+```{r exercice4-retrive-data}
+# La fonction read_csv2 est issue du package readr qui permet des imports
+# exports facilités dans R
+df <- read.csv("../data/RM04data.csv", sep = ',', header = FALSE)
+df <- df[1:4,]
+
+columns_names = c("xi_sys1", "xi_sys2", "xi_sys3", "xi_sys4")
+observations_labels <- paste('x',as.character(1:200),sep = '')
+
+rownames(df) <- columns_names
+colnames(df) <- observations_labels
+
+df <- t(df)
+
+head(df)
+```
+
+Pour vérifier :
+
+```{r exercice4-verif-dim}
+dim(df)
+```
+
+On a donc un jeu de données à 4 échantillons de 200 éléments
+(les temps d'observation inter-pannes $x_i$).
+
+L'objectif de cet exercice est d'identifier les lois les plus adaptées à chaque
+échantillon.
+
+On peut commencer à travailler les données en calculant les $T_i$ : les dates
+de panne observées.
+
+```{r exe4-calculer-ti}
+df <- cbind(df,cumsum(df[,1]),cumsum(df[,2]),cumsum(df[,3]),cumsum(df[,4]))
+columns_names <- c(columns_names,
+                   "ti_sys1", "ti_sys2", "ti_sys3", "ti_sys4")
+
+colnames(df) <- columns_names
+
+head(df)
+```
+
+On obtient les $T_i$ en faisant la somme cumulée des $x_i$ ce qui donne :
+
+$$
+\forall i \in [1,n] : T_i = \sum_{k=1}^{i} x_k
+$$
+
+### Échantillon n°1
+
+On peut commencer par tracer les données :
+
+- l'évolution des durées inter-pannes,
+- les dates de panne.
+
+```{r exe4-sys1-plot}
+ggplot() +
+    geom_line(aes(x = 1:200, y = df[,"xi_sys1"])) +
+    labs(x = "N° de mesure",
+         y = "Durée inter-panne",
+         title = "Représentation de l'échantillon des
+         durées inter-pannes pour l'échantillon n°1")
+
+ggplot() +
+    geom_line(aes(x = 1:1300, y = 1)) +
+    geom_point(aes(x = df[,"ti_sys1"], y = 1)
+               , color = "red",
+               shape = 4) +
+    labs(x = "t",
+         y = "",
+         title = "Représentation des dates de panne pour l'échantillon n°1") +
+    guides(y = "none")
+```
+
+D'après les deux graphiques précédent, on peut supposer que la variable aléatoire
+dont est issue l’échantillon n°1 ne présente pas de tendance : il semble que les
+dates de pannes (et donc les durées inter-pannes) sont uniformément distribuées.
+
+#### Tendance
+
+Si les $X_i$ (ou $T_i$) sont $iid$, l’échantillon ne possède aucune tendance.
+On va donc tester l'hypothèse selon laquelle notre échantillon est $iid$ pour
+déterminer ou non la présence de tendance.
+
+Nous disposons de deux outils mathématique :
+
+- le test de Laplace,
+- le test de Spearman.
+
+Je propose d'utiliser le test de Laplace dans un premier temps.
+
+Dans le cadre de la sûreté de fonctionnement il se présente ainsi :
+
+$$
+\left\{
+  \begin{array}{ll}
+    H_0 : \mbox{les données sont issues d'un processus de poisson homogène} \\
+    H_1 : \mbox{les données ne sont pas issues d'un processus de poisson homogène}
+  \end{array}
+\right.
+$$
+
+Si l'on établit que les données sont issues d'un processus de Poisson Homogène
+(PPH), alors par définition, on établit que les données ne possèdent pas de
+tendance.
+
+On a la statistique de test suivante :
+
+$$
+U = 
+\sqrt{\frac{12}{(n-1)T_n^2}}
+\left(\sum_{i=1}^{n} T_i - (n+1)\frac{T_n}{2} \right)
+$$
+que l'on compare à au quantile de la loi normale centrée réduite.
+
+$$
+\left\{
+  \begin{array}{ll}
+    |U| > F_{N_{(0,1)}}^{-1} (1-\frac{\alpha}{2})\mbox{, alors on rejette } H_0\\
+    |U| < F_{N_{(0,1)}}^{-1} (1-\frac{\alpha}{2}) \mbox{, on ne rejette pas } H_0
+  \end{array}
+\right.
+$$
+
+Si on conserve $H_0$ on en conclue que l’échantillon est issus d'un PPH, et donc
+qu'il n'y a pas de tendance.
+
+On peut écrire une fonction qui calcule la statistique de test en fonction des
+$T_i$:
+```{r}
+compute_laplace_stat <- function(ti){
+  
+  # Prend le tableau des Ti en entrée de fonction et retourne U
+  
+  n <- length(ti)
+  U <- sqrt((12)/((n-1)*ti[n]^2))*(sum(ti)-(n+1)*ti[n]/2)
+
+  U %>% as.numeric %>% return()
+  
+}
+```
+
+On calcul la statistique de test $U$ :
+```{r}
+compute_laplace_stat(df[,"ti_sys1"])
+```
+
+Au seuil $\alpha = 0.05$ on va comparer la statistique de test avec le quantile de la loi normale centrée réduite
+de $1.96$.
+
+```{r}
+alpha = 0.05 # risque
+n = 200 # nombre d'observartion
+qnorm(1-alpha/2)
+```
+
+On a bel et bien $|U| < 1.96$, on ne rejette donc pas $H_0$
+et on peut conclure que la série de mesure ne possède pas de
+tendance.
+
+#### Adéquation à la loi exponentielle
+
+Le test précédent nous confirme qu'il n'y a pas de tendance.
+
+On peut alors tester l'adéquation des données avec une loi
+exponentielle.
+
+On peut utiliser un test de Bartlett que l'on doit programmer.
+
+Le test se présente ainsi :
+
+$$
+\left\{
+  \begin{array}{ll}
+    H_0 : \mbox{les données sont issues d'un processus de poisson homogène} \\
+    H_1 : \mbox{les données ne sont pas issues d'un processus de poisson homogène}
+  \end{array}
+\right.
+$$
+
+Avec la statistique de test :
+
+$$
+B = \frac{2n\left( ln\left(\frac{T_n}{n}\right)
+- \frac{\sum_{i=1}^{n}ln(X_i)}{n} 
+\right)}
+{1+\frac{n+1}{6n}}
+$$
+
+que l'on compare au quantile de la loi du $\chi^2_{n-1}$
+
+$$
+\left\{
+  \begin{array}{ll}
+    B \in \left[ F_{\chi_{n-1}^2}^{-1}(\frac{\alpha}{2}) ;
+      F_{\chi_{n-1}^2}^{-1}(1-\frac{\alpha}{2}) \right]
+        \mbox{, on ne rejette pas } H_0 \\
+    B \notin \left[ F_{\chi_{n-1}^2}^{-1}(\frac{\alpha}{2}) ;
+      F_{\chi_{n-1}^2}^{-1}(1-\frac{\alpha}{2}) \right]
+        \mbox{, alors on rejette } H_0
+  \end{array}
+\right.
+$$
+
+```{r}
+compute_bartlett_stat <- function(tn, xi) {
+  
+  n <- length(xi)
+  
+  2*n*(log(tn/n)-sum(log(xi))/n)/(1+((n+1)/(6*n))) %>% return()
+}
+```
+
+```{r}
+# on calcule la statistique de test
+compute_bartlett_stat(df[n,"ti_sys1"], df[,"xi_sys1"])
+```
+
+On cherche alors le quantile de la loi du $\chi^2$ :
+
+```{r}
+qchisq(p = 0.025, n-1)
+qchisq(p = 0.975, n-1)
+```
+
+Dans ce cas on ne va pas rejeter $H_0$ et considérer que
+l'échantillon est issu d'un processus de poisson homogène (PPH).
+
+Les observations sont donc issus d'une variable aléatoire exponentielle.
+
+On peut compléter l'analyse avec une adéquation graphique.
+
+```{r}
+nuage = tibble(-log(1-(1:200)/(n+1)),sort(df[,"xi_sys1"]))
+colnames(nuage) <- c('formula','x')
+
+ggplot() +
+    geom_point(aes(x = nuage$`x`,y = nuage$formula)) +
+    geom_smooth(aes(x = nuage$`x`,y = nuage$formula),
+                se = FALSE,
+                method = lm) +
+    labs(y = "xi*, les valeurs de x mesurées triées dans l'ordre",
+         x = "-ln(1-i/(n+1))",
+         title = "Test par adéquation graphique")
+```
+
+La fonction `geom_smooth` du package `ggplot2` permet d'ajuster une droite
+de régression aux données affichées.
+
+On peut utiliser la fonction `lm` pour obtenir les informations sur la droite
+de régression.
+
+```{r}
+lm(nuage$formula~nuage$x) %>% summary()
+```
+
+La valeur de la pente de la droite de régression estimée par la fonction
+`lm` est de $0.165511$, il s'agit d'une estimation de $\lambda$ que
+l'on notera $\hat{\lambda}_{gph}^{sys1}$
+
+On a un $R^2=0.99$ ce qui permet de renforcer la conclusion selon laquelle
+l'échantillon est issue d'une loi exponentielle.
+
+#### Estimation des paramètres
+
+On peut ensuite chercher à estimer les paramètres
+
+```{r}
+estim_param_sys1_mm = 1/mean(df[,"xi_sys1"])
+estim_param_sys1_mm
+```
+
+On trouve donc l'estimateur par
+méthode des moments : $\hat{\lambda}_{mm}^{sys_{1}} \simeq 0.1541832$.
+
+Nos deux estimateurs : $\hat{\lambda}_{mm}^{sys_{1}} \simeq 0.1541832$
+et $\hat{\lambda}_{gph}^{sys1} \simeq 0.165511$
+sont très proches quoi que légèrement différents.
+
+#### Représentation graphique des deux modèles
+
+```{r}
+estim_param_sys1_gph = 0.165511
+t = seq(0,40,0.001)
+
+ggplot() +
+  geom_line(aes(t, 1-pexp(t,estim_param_sys1_mm)), color = 'red') +
+  geom_line(aes(t, 1-pexp(t,estim_param_sys1_gph)), color = 'blue') +
+  xlim(0,40) +
+  ylim(0,1) +
+  labs(x = "t",
+       y = "R(t)",
+       title = "Comparaison entre deux courbes de la
+       loi exponentielle pour deux estimation de la valeur de lambda",
+       subtitle = "En rouge pour le lambda calculé par méthode des moments
+       et en bleu pour le lambda trouvé par adéquation graphique.")
+```
+
+On remarque que la courbe rouge semple mieux correspondre aux données.
+
+```{r}
+ggplot() +
+  geom_point(aes(
+      x = df[,"xi_sys1"],
+      y = estim_param_sys1_mm*exp(-1*estim_param_sys1_mm*df[,"xi_sys1"])
+    ),
+    shape = 3,
+    color = 'black') +
+  geom_line(aes(t, dexp(t,estim_param_sys1_mm)), color = 'red') +
+  geom_line(aes(t, dexp(t,estim_param_sys1_gph)), color = 'blue') +
+  xlim(0,5) +
+  ylim(0,0.17) +
+  labs(x = "t",
+       y = "R(t)")
+```
+
+#### Conclusion
+
+On peut donc conclure que l'échantillon n°1 est issue d'un système suivant une
+loi exponentielle de paramètre $\lambda = 0.1541832$ donc de moyenne 
+(nous de disposons pas des unités) :
+
+```{r}
+1/estim_param_sys1_mm
+```
+
+### Échantillon n°2
+
+On commence par tracer l'échantillon :
+
+```{r exe4-sys2-plot}
+ggplot() +
+  geom_line(aes(x = 1:200, y = df[,"xi_sys2"])) +
+  labs(x = "N° de mesure",
+       y = "Durée inter-panne",
+       title = "Représentation de l'échantillon des
+       durées inter-pannes pour l'échantillon n°2")
+
+ggplot() +
+  geom_line(aes(x = 1:1300, y = 1)) +
+  geom_point(aes(x = df[,"ti_sys2"], y = 1)
+             , color = "red",
+             shape = 4) +
+  labs(x = "t",
+       y = "",
+       title = "Représentation des dates de panne pour l'échantillon n°2") +
+  guides(y = "none")
+```
+
+On peut encore supposer une absence de tendance au vu de la répartition des
+pannes.
+
+#### Tendance
+
+Pour observer la tendance on peut utiliser le test de Laplace.
+
+```{r}
+compute_laplace_stat(df[,"ti_sys2"])
+```
+
+Là encore, on est en dessous de 1.96, on peut conclure à l'absence de tendance.
+
+#### Adéquation à la loi exponentielle
+
+On réalise un test de Bartlett :
+
+```{r}
+compute_bartlett_stat(df[200,"ti_sys2"], df[,"xi_sys2"])
+```
+
+Dans ce cas on va très clairement rejeter $H_0$ car nous ne nous trouvons
+pas entre les quantiles du $\chi^2$ :
+
+```{r}
+qchisq(p = 0.025, n-1)
+qchisq(p = 0.975, n-1)
+```
+
+Donc la loi exponentielle ne semble pas adéquate à cet échantillon.
+
+#### Adéquation à la loi de Weibull par maintenance parfaite
+
+On peut alors tester l'hypothèse selon laquelle la variable aléatoire dont
+l'échantillon est issue suit une loi de Weibull avec réparation parfaite.
+
+On peut vérifier cette hypothèse en par adéquation graphique.
+
+Pour celà on doit tracer le nuage de point :
+
+$$
+\left( ln(x_i^*),
+ln \left(ln \left( \frac{1}{1-\frac{i}{n+1}} \right) \right) \right)
+$$
+
+Avec les $x_i^*$ sont les données mesurées triées dans l'ordre.
+
+```{r}
+nuage2 = tibble(log(log(1/(1-((1:200)/(n+1))))),log(sort(df[,"xi_sys2"])))
+colnames(nuage2) <- c('formula','x')
+
+ggplot() +
+    geom_point(aes(x = nuage2$`x`,y = nuage2$formula)) +
+    geom_smooth(aes(x = nuage2$`x`,y = nuage2$formula),
+                se = FALSE,
+                method = lm) +
+    labs(y = "xi*, les valeurs de x mesurées triées dans l'ordre",
+         x = "ln(ln(1/(1-i/(n+1))))",
+         title = "Test par adéquation graphique")
+```
+
+Par adéquation graphique on trouve une très bonne droite.
+
+On peut effectuer la régression pour conclure sur l'adéquation.
+
+```{r}
+lm(nuage2$formula~nuage2$x) %>% summary()
+```
+
+Avec une $p_{value}=2.2e-16$ et un $R^2=0.9902$ on conclure à la pertinence d'effectuer
+une droite de regression sur ces données.
+
+On peut donc conclure que l'échantillon n°2 est issus d'un
+Processus de Poisson Homogène (PPH) de type Weibull avec maintenance parfaite.
+
+On peut effectuer deux estimations des paramètres.
+
+#### Estimation des paramètres
+
+Graphiquement on a :
+$$
+\mbox{Pente de la droite de regression} = \hat{\beta}_{gph} \\
+\mbox{Ordonnée à l'origine} = -\hat{\beta}_{gph} ln(\hat{\theta}_{gph})\\
+\hat{\theta}_{gph} = e^{-\frac{OaO}{\hat{\beta}_{gph}}}
+$$
+
+Donc on a :
+```{r}
+beta = 2.58428
+theta = exp(-(-4.15267)/(beta))
+estim_param_sys2_gph = list(beta = beta, theta = theta)
+print(estim_param_sys2_gph)
+```
+
+Par estimation par maximum de vraisemblance :
+```{r}
+# Focntion du package EWGoF
+estim_param_sys2_mv <- MLEst(df[,"xi_sys2"])
+estim_param_sys2_mv$eta
+estim_param_sys2_mv$beta
+```
+
+Les deux estimations sont très proches.
+
+#### Représentation graphique des deux modèles
+```{r}
+t = seq(0,15,0.001)
+ggplot() +
+  geom_line(
+    aes(t, 1-pweibull(t,
+                    shape = estim_param_sys2_gph$beta,
+                    scale = estim_param_sys2_gph$theta)),
+    color = 'red') +
+  geom_line(
+    aes(t, 1-pweibull(t,
+                    shape = estim_param_sys2_mv$beta,
+                    scale = estim_param_sys2_mv$eta)),
+    color = 'blue') +
+  labs(x = "t",
+       y = "R(t)",
+       title = "Comparaison entre deux courbes de la
+       loi de Weibull pour deux estimation des paramètres",
+       subtitle = "En rouge pour les paramètres calculé par adéquation graphique et
+       en bleu par maximum de vraisemblance.")
+```
+
+```{r}
+t = seq(0,15,0.001)
+ggplot() +
+  geom_line(
+    aes(t, 1-pweibull(t,
+                    shape = estim_param_sys2_gph$beta,
+                    scale = estim_param_sys2_gph$theta)),
+    color = 'red') +
+  geom_line(
+    aes(t, 1-pweibull(t,
+                    shape = estim_param_sys2_mv$beta,
+                    scale = estim_param_sys2_mv$eta)),
+    color = 'blue') +
+  labs(x = "t",
+       y = "R(t)",
+       title = "Comparaison entre deux courbes de la
+       loi de Weibull pour deux estimation des paramètres",
+       subtitle = "En rouge pour les paramètres calculé par adéquation graphique et
+       en bleu par maximum de vraisemblance.") +
+  xlim(2.5,3) +
+  ylim(0.75,1)
+```
+
+Les deux solutions offrent des résultats similaires, la différence est
+au centième.
+
+#### Conclusion
+
+l'échantillon n°2 est issue d'une variable aléatoire suivant une loi de Weibull.
+Nous disposons de deux estimations de paramètres :
+
+- $\beta = 2.58428$ et $\theta = 4.987308$ pour adéquation graphique.
+- $\beta = 2.535939$ et $\theta = 4.980278$ par estimation du maximum de 
+vraisemblance.
+
+On ne peut pas trancher simplement en effectuant une moyenne des deux paramètres.
+On peut choisir l'une ou l'autre ou procéder à d'avantage d'analyses.
+
+Je propose de conserver l'estimation par maximum de vraisemblance
+(la lecture graphique induit une erreur supplémentaire lors de la régression).
+
+Dans ce cas on a : $MMTF_{sys_{2}} = \theta \Gamma(1+\frac{1}{\beta})$
+
+La fonction `gamma()` de R permet de calculer $\Gamma(x)$.
+
+```{r}
+print("MTTF pour le système 2 :")
+estim_param_sys2_mv$eta*gamma(1+1/estim_param_sys2_mv$beta)
+```
+
+
+### Échantillon n°3
+
+On peut commencer par tracer les données :
+
+- l'évolution des durées inter-pannes,
+- les dates de panne.
+
+```{r}
+ggplot() +
+    geom_line(aes(x = 1:200, y = df[,"xi_sys3"])) +
+    labs(x = "N° de mesure",
+         y = "Durée inter-panne",
+         title = "Représentation de l'échantillon des
+         durées inter-pannes pour l'échantillon n°3")
+
+ggplot() +
+    geom_line(aes(x = 1:750, y = 1)) +
+    geom_point(aes(x = df[,"ti_sys3"], y = 1)
+               , color = "red",
+               shape = 4) +
+    labs(x = "t",
+         y = "",
+         title = "Représentation des dates de panne pour l'échantillon n°3") +
+    guides(y = "none")
+```
+
+A première vue il n'y a pas de tendance dans le jeu de données.
+
+#### Tendance
+
+Pour observer la tendance on peut utiliser le test de Laplace.
+
+```{r}
+compute_laplace_stat(df[,"ti_sys3"])
+```
+
+Là encore, on est en dessous de 1.96, on peut conclure à l'absence de tendance.
+
+#### Adéquation à la loi exponentielle
+
+On réalise un test de Bartlett :
+
+```{r}
+compute_bartlett_stat(df[200,"ti_sys3"], df[,"xi_sys3"])
+```
+
+Dans ce cas on va rejeter $H_0$ car nous ne nous trouvons
+pas entre les quantiles du $\chi^2$ :
+
+```{r}
+qchisq(p = 0.025, n-1)
+qchisq(p = 0.975, n-1)
+```
+
+Cependant on rejette $H_0$ d'assez peu il faut donc rester critique sur les résultats
+obtenus par la suite.
+
+On conclue donc que la loi exponentielle n'est pas adaptée pour modéliser ces
+données.
+
+#### Adéquation à la loi de Weibull par maintenance parfaite
+
+On réutilise la même idée que pour le second échantillon : on passe par l'
+adéquation graphique.
+
+```{r}
+nuage3 = tibble(log(log(1/(1-((1:200)/(n+1))))),log(sort(df[,"xi_sys3"])))
+colnames(nuage3) <- c('formula','x')
+
+ggplot() +
+    geom_point(aes(x = nuage3$`x`,y = nuage3$formula)) +
+    geom_smooth(aes(x = nuage3$`x`,y = nuage3$formula),
+                se = FALSE,
+                method = lm) +
+    labs(y = "xi*, les valeurs de x mesurées triées dans l'ordre",
+         x = "ln(ln(1/(1-i/(n+1))))",
+         title = "Test par adéquation graphique")
+```
+
+La droite ne *fit* pas parfaitement avec les données
+mais reste plutôt bonne. On peut ajouter la resgression
+linéaire à l'analyse :
+
+```{r}
+lm(nuage3$formula~nuage3$x) %>% summary()
+```
+
+On peut considérer au vu du $R^2$ et de la $p_{value} que la loi de Weibull est adaptée à modéliser ces données.
+
+On peut donc conclure que l'échantillon n°2 est issus d'un
+Processus de Poisson Homogène (PPH) de type Weibull avec maintenance parfaite.
+
+#### Estimation des paramètres
+
+```{r}
+beta = 1.09692
+theta = exp(-(-1.41662)/(beta))
+estim_param_sys3_gph = list(beta = beta, theta = theta)
+print("Graphiquement")
+print(estim_param_sys3_gph)
+
+# Focntion du package EWGoF
+print("Maximum de vraissemblance")
+estim_param_sys3_mv <- MLEst(df[,"xi_sys3"])
+print("beta")
+estim_param_sys3_mv$beta
+print("theta")
+estim_param_sys3_mv$eta
+```
+
+Dans ce cas, on a une incohérence entre les deux estimations pour la valeur
+de $\beta$. Il faut donc rejeter l'hypothèse selon laquelle ces données seraient
+issues d'une loi de Weibull.
+
+#### Conclusion
+
+Plus d'analyse devraient être menées pour conclure sur ce jeu de données.
+
+### Échantillon n°4
+
+On peut commencer par tracer les données :
+
+- l'évolution des durées inter-pannes,
+- les dates de panne.
+
+```{r}
+ggplot() +
+    geom_line(aes(x = 1:200, y = df[,"xi_sys4"])) +
+    labs(x = "N° de mesure",
+         y = "Durée inter-panne",
+         title = "Représentation de l'échantillon des
+         durées inter-pannes pour l'échantillon n°4")
+
+ggplot() +
+    geom_line(aes(x = 1:60, y = 1)) +
+    geom_point(aes(x = df[,"ti_sys4"], y = 1)
+               , color = "red",
+               shape = 4) +
+    labs(x = "t",
+         y = "",
+         title = "Représentation des dates de panne pour l'échantillon n°4") +
+    guides(y = "none")
+```
+
+Il semble presque *évident* que ces données sont issues d'une loi avec tendance.
+
+#### Tendance
+
+Pour observer la tendance on peut utiliser le test de Laplace.
+
+```{r}
+compute_laplace_stat(df[,"ti_sys4"])
+```
+
+On est bien au dessus de la valeur critique $1.96$, on ne rejette donc pas
+l'hypothèse $H_0$ et on doit conclure à la présence de tendance.
+
+On peut préciser avec le test de place le type de tendance :
+```{r}
+compute_laplace_stat(df[,"ti_sys4"]) < qnorm(p = 0.05, mean = 0, sd = 1)
+compute_laplace_stat(df[,"ti_sys4"]) > qnorm(p = 1-0.05, mean = 0, sd = 1)
+```
+
+On est donc dans un système avec décroissance de fiabilité car la statistique
+de test $U$ est plus grande que le quantile de niveau $1-0.05=0.95$.
+
+#### Adéquation à la loi de Weibull avec maintenance minimale
+
+Dans le cas d'une tendance de fiabilité décroissante on peut d'abord tester une
+l'adéquation à une loi de Weibull avec maintenance minimale.
+
+On appelle ce processus un processus de poisson non homogène (PPNH) ou
+*power law process (PLP)*.
+
+Dans ce cas on parle de **loi de gamma-Weibull**.
+
+Graphiquement on va regarder l'adéquation du nuage de point suivant :
+
+$$
+\left( ln(t_i), ln(i) \right)
+$$
+
+```{r}
+nuage4 = tibble(log(df[,"ti_sys4"]),log(1:200))
+colnames(nuage4) <- c('x','formula')
+
+ggplot() +
+    geom_point(aes(x = nuage4$`x`,y = nuage4$formula)) +
+    geom_smooth(aes(x = nuage4$`x`,y = nuage4$formula),
+                se = FALSE,
+                method = lm) +
+    labs(y = "xi*, les valeurs de x mesurées triées dans l'ordre",
+         x = "ln(ln(1/(1-i/(n+1))))",
+         title = "Test par adéquation graphique")
+```
+
+L'adéquation graphique est plutôt bonne. On vérifie avec la fonction `lm` :
+
+```{r}
+lm(nuage4$formula~nuage4$x) %>% summary()
+```
+
+On a une faible $p_{value}$ et un $R^2=0.9891$. Le modèle choisit semble pertinent.
+
+#### Estimation des paramètres
+
+On a donc :
+
+$$
+\hat{\beta}_{gph} = \mbox{Pente de la droite} \\
+\mbox{OaO} = ln(\alpha) \\
+\alpha = exp(OaO)
+$$
+
+```{r}
+beta = 2.18977
+alpha = exp(-3.34278)
+estim_param_sys4_gph = list(beta = beta, alpha = alpha)
+print(estim_param_sys4_gph)
+```
+
+On peut aussi utiliser l'estimateur du maximum de vraisemblance.
+
+On a :
+
+$$
+\hat{\alpha} = \frac{n}{t_{n}^{\hat{\beta}}} \space ;
+\space \hat{\beta} = \frac{n}{\sum_{i=1}^{n} ln \left( \frac{t_n}{t_i} \right)}
+$$
+
+```{r}
+beta = n/sum(log(df[n,"ti_sys4"]/df[,"ti_sys4"]))
+alpha = n/(df[n,"ti_sys4"]^beta)
+estim_param_sys4_mv = list(
+  alpha = alpha,
+  beta = beta
+)
+estim_param_sys4_mv
+```
+
+Nos deux approximations sont assez proches mais avec une loi comme la loi de
+Weibull, la moindre variation du paramètre (notamment pour $\beta$)
+peut avoir une incidence certaine sur les performances dur modèle choisit.
+
+On peut calculer les $MTTF$ selon les deux modèles trouvés :

@@ -1,0 +1,186 @@
+---
+output:
+  pdf_document: default
+  html_document: default
+---
+```{r exercice2-lib, message=FALSE, warning=FALSE, include=FALSE}
+library(ggplot2, warn.conflicts = FALSE)
+library(magrittr, warn.conflicts = FALSE)
+```
+
+\newpage
+
+# Exercice 2
+
+```{r exercice2-clean-memory}
+# Pour régler la génération aléatoire et conserver les mêmes
+# valeurs à la compilation
+set.seed(54684)
+
+# Block de code pour effacer le contenu de la mémoire, utile à la compilation
+rm(list = ls())
+```
+
+
+On a un système $S$ à $n$ composants $iid$ de loi exponentielle.
+On a $\lambda = 0.1(jour^{-1})$ en configuration parallèle.
+
+On peut procéder ainsi pour simuler un instant de panne de $S$ unique pour $n$ fixé :
+
+1. On simule n réalisation $T_1,...,T_n$ aléatoires de la loi exponentielle
+de paramètre lambda
+
+2. On calcule $T_S = max(T_1,...,T_n)$ (car la structure est parallèle).
+
+\
+
+```{r exercice2-fonctions-utiles}
+
+# Ce bloc de code permet d'écrire des fonctions utiles pour la suite le
+# l'exercice.
+
+# Le 'pipe' %>% permet de passer des arguments à des fonctions en R.
+# On peut par exemple écrire :
+#   10 %>% exp()
+# Pour calculer exp(10).
+
+exe2_simu_panne_systeme <- function(n, taux) {
+    
+    # Retourne une réalisation de panne du système pour n
+    # et pour lambda = taux
+    
+    # crée n tirage de loi exponentiel avec lambda = taux, calcule le maximum
+    # et retourne le résultat.
+    n %>% rexp(taux) %>% max() %>% return()
+}
+
+exe2_simu_mttf_system <- function(n,taux,p) {
+    
+    # Calcul un MTTF théorique à partir de p réplications pour n composants
+    # et un taux.
+    
+    # Crée p réplications de date de panne pour le système.
+    # Calcule la moyenne de ces p réplications et retourne le résultat.
+    replicate(p,exe2_simu_panne_systeme(n,taux)) %>% mean() %>% return()
+}
+
+# Calcul théorique du MTTF avec le résultat connu pour ce système
+# spécifique.
+exe2_theoric_mttf_system <- function(n, taux) {return(sum(1/1:n)/taux)}
+```
+
+La fonction `exe2_simu_panne_systeme` ci-dessus retourne une réalisation de panne du système pour
+$n$ et $\lambda$.
+
+On peut essayer pour les paramètres suivants : $n=10$ et $\lambda=0.1$.
+```{r exercice2-test-fonction}
+exe2_simu_panne_systeme(10,0.1)
+```
+
+Dans ce cas, le système tombe donc en panne pour 32,16 jours.
+
+Pour rappel, pour un tel système, on a le résultat théorique
+suivant :
+$$
+MTTF_n = \frac{1}{\lambda} \sum_{i=1}^{n} \frac{1}{i}
+$$
+
+Si on fait l'application numérique avec $n=10$ et $\lambda=0.1$ :
+```{r exercice2-test-fonction-mttf-theorique}
+exe2_theoric_mttf_system(10,0.1)
+```
+On trouve donc : $MTTF_{n=10} (\lambda = 0.1) \simeq 29.29$.
+
+Ensuite on va chercher à évaluer l'évolution du $MTTF$ en fonction de $n$
+et comparer
+les simulations avec les résultats théoriques.
+
+Pour trouver le $MTTF$ par simulation, il suffit de répliquer la fonction :
+`exe2_simu_panne_systeme` $p$ fois (avec $p$ relativement grand) et de prendre la
+moyenne des simulations réalisées, ce que fait la fonction `exe2_simu_mttf_system`.
+
+On va donc appeler cette fonction pour plusieurs valeurs de $n$ pour constituer
+une liste de $MTTF$ simulés en fonction de $n$.
+
+```{r exercice2-mttf-variations-n}
+p = 1000 # nombre de répliques par simulations pour le calcul du MTTF
+taux = 0.1
+nvals = seq(10,5000,10)
+
+# L'object contient les simulations de MTTF pour n de 10 à 5000
+# par pas de 10 
+# Un peu long à la compilation
+
+exe2_simu_MTTF_n <- nvals %>% mapply(FUN = exe2_simu_mttf_system, taux = taux, p = p)
+
+# L'object contient les valeurs théoriques de MTTF pour n de 10 à 5000
+# par pas de 10
+# Un peu long à la compilation
+exe2_theoric_MTTF_n <- mapply(FUN = exe2_theoric_mttf_system,
+                              n = nvals, taux = 0.1)
+```
+
+On peut tracer les courbes :
+```{r exercice2-affichage-courbes}
+ggplot() +
+    geom_line(aes(x = nvals, y = exe2_theoric_MTTF_n)) +
+    geom_line(aes(x = nvals, y = exe2_simu_MTTF_n),
+               color = "red") + 
+    labs(x = "Valeurs de n",
+         y = "MTTF du système pour n",
+         title = "Évolution du MTTF du système en fonction de n.",
+         subtitle = "En rouge, les valeurs simulées pour n.")
+```
+
+On observe donc que les valeurs simulés sont bel et bien proches des valeurs
+théoriques.
+
+On remarque que le $MTTF$ croit rapidement mais il semble ensuite prendre
+une forme logarithmique et donc une croissance très très lente.
+
+Graphiquement, il semble qu l'on attend un $MTTF$ de 80 jours pour une valeur
+de $n$ proche de $n=1700$.
+
+On peut essayer de zoomer sur le grahe pour s'en assurer :
+```{r}
+zoom = 165:170
+ggplot() +
+    geom_line(aes(x = nvals[zoom], y = exe2_theoric_MTTF_n[zoom])) +
+    geom_line(aes(x = nvals[zoom], y = exe2_simu_MTTF_n[zoom]),
+               color = "red") + 
+    labs(x = "Valeurs de n",
+         y = "MTTF du système pour n",
+         title = "Évolution du MTTF du système en fonction de n.",
+         subtitle = "En rouge, les valeurs simulées pour n.")
+```
+
+On remarque qu'on atteint très précisément un $MTTF$ de 80 pour un $n$ entre 1670 et 1675.
+
+Celà signifie qu'il faudrait environ 1670 composants en série pour s'assurer que le 
+système tombe en panne dans environ 80 jours.
+
+Ce résultat peut être approché par le calcul. En effet on utilise
+l'approximation :
+$$
+\sum_{i=1}^{n} \frac{1}{i} \simeq log(n) + 0.577
+$$
+
+Dans ce cas :
+$$
+MTTF_n \simeq \frac{1}{\lambda}(log(n) + 0.577)
+$$
+
+On peut donc résoudre l'équation pour $n^*$:
+
+$\begin{aligned}
+    & MTTF_n \simeq \frac{1}{\lambda}(log(n) + 0.577) \simeq 80 \\
+    & log(n) \simeq 80\lambda - 0.577 \\
+    & n \simeq e^{80\lambda-0.577}
+\end{aligned}$
+
+```{r}
+exp(80*0.1-0.577)
+```
+
+On retrouve une très bonne approximation qui nous indique que pour avoir un système
+qui tombe en panne au bout de 80 jours il nous faut environ 1674 composants.

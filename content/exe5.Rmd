@@ -1,0 +1,181 @@
+---
+output:
+  html_document: default
+---
+
+```{r exercice5-setup, message=FALSE, warning=FALSE, include=FALSE}
+knitr::opts_chunk$set(cache = TRUE)
+```
+
+```{r exe5-library, include=FALSE}
+library(ggplot2, warn.conflicts = FALSE) # Pour les graphiques
+library(magrittr, warn.conflicts = FALSE) # Pour l'opérateur pipe : %>%
+library(dplyr, warn.conflicts = FALSE) # Pour la manipulation de dataframe
+```
+
+```{r exercice5-clean-memory, message=FALSE, warning=FALSE, include=FALSE}
+# Pour régler la génération aléatoire et conserver les mêmes
+# valeurs à la compilation
+set.seed(54684)
+
+# Block de code pour effacer le contenu de la mémoire, utile à la compilation
+rm(list = ls())
+```
+
+\newpage
+
+# Exercice 5
+
+Cette exercice s'intéresse à la simulation et l'optimisation d'une politique de
+maintenance.
+
+Je décide pour cet exercice de moi même simuler l'ensemble des loi utilisées.
+
+J'utilise uniquement la fonction `runif(1)` qui me permet d'obtenir une réalisation
+de la loi uniforme entre 0 et 1.
+
+```{r}
+# Simulation d'une réalisation de la loi de Weibul de paramètre
+# thêta et beta
+# remplace la fonction rweibull() de R
+
+realisation_aleatoire_weibull <- function(scale = 1, shape = 1) {
+    scale * (-log(runif(1)))^(1/shape) %>% return()
+}
+```
+
+
+## Partie 1 : Un composant
+
+Dans cette première partie on ne traite qu'un composant : une ampoule. Cette
+dernière a une durée de vie qui suit une loi de Weibull de paramètres $\eta = 3an$
+(soit $3*365=1095jour$, je néglige les années bissextiles).
+(échelle) et $\beta = 2.5$ (forme).
+
+On planifie des maintenances préventives (MP) tout les $x$ jours avec un coût de $c_{mp}=200euros$.
+
+En cas de panne du système, on effectue une maintenance corrective (MC) d'un coût
+de $c_{mc}=1000euros$.
+
+Toute maintenance remet à neuf le système. On est donc dans le cas d'une maintenance
+parfaite pour une loi de Weibull (Processus de poisson homogène).
+
+Le temps de maintenance est négligé (remise en marche immédiate).
+
+Sur l'intervalle de temps considéré $H$ (l'horizon de simulation). On peut poser
+:
+
+- $M_n$ le type de la n-ième maintenance (MP/MC)
+
+- $T_n$ la date de la n-ième maintenance
+
+- $C_t$ le coût total des maintenances effectuées à l'intant $t$.
+
+Ces trois grandeurs sont des variables aléatoires qui dépendent de $x$.
+
+Observer une trajectoire du système consiste à simuler les pannes successives du
+système avec des
+paramètres données ($x$,$H$,$\eta$,$\beta$,$c_{mp}$,$c_{mc}$) et de calculer le
+coût total de cette trajectoire (qui est une variable synthétique dépendant de
+ces paramètres : $Cf(x,H,\eta,\beta,c_{mp},c_{mc})$).
+
+Pour calculer le coût moyen associé à une valeurs de $x$ on va simuler un
+grand nombre de trajectoire avec le jeu de paramètre fixe et calculer la moyenne
+des coûts obtenus.
+
+On répétera le processus en faisant varier les valeurs de $x$ pour tracer la
+courbe du prix moyen.
+
+Il nous faut donc :
+
+- une fonction pour simuler une réalisation de $Cf(x,H,\eta,\beta,c_{mp},c_{mc})$,
+- calculer la moyenne des $Cf_{i}$ pour $p$ réalisations ($p$ grand),
+- répéter en faisant varier $x$.
+
+```{r}
+# Fonction pour simuler une trajectoire
+
+realisation_trajectoire_sys1 <- function(param, info = FALSE) {
+    
+    # param est un argument de type list() de la forme :
+    # param = list(H,x,scale,shape,cmp,cmc)
+    
+    # Attention :
+    # H, scale et x sont en jours
+    
+    # les dates de maintenance préventives prévues
+    echeancier <- param$x * 1:floor(param$H/param$x)
+    if (info) {
+        #debug
+        print("=== l'échéancier de maintenance préventive ===")
+        print(echeancier)
+        print("=== Début de simulation ===")
+    }
+    # Le temps courant
+    t <- 0
+    
+    # Cout final actuel
+    Cf <- 0
+    
+    i <- 1 # un indice
+    
+    while (t < param$H) {
+        next_panne <- t + realisation_aleatoire_weibull(scale = param$scale,
+                                                       shape = param$shape)
+        if (info) {
+            # debug
+            print(paste("Temps courant",t))
+            print(paste("Date de la prochaine panne : ",next_panne))
+            print(paste(
+                "Date de la prochaine maintenance préventive : ",
+                echeancier[i]))
+        }
+        
+        if (next_panne < echeancier[i]) {
+            # Dans ce cas la prochaine panne si on laisse vivre le système
+            # arrive avant la prochaine maintenance préventive
+            # donc on effectue la maintenance corrective
+            
+            if (info) {print("MC")}
+            
+            # on met à jour le temps courant
+            t <- next_panne
+            # on effectue une maintenance corrective
+            Cf <- Cf + param$cmc
+        } else {
+            
+            if (info) {print("MP")}
+            
+            # on effecute la maintenance préventive avant une survenue de panne
+            t <- echeancier[i]
+            i = i + 1
+            # on effectue une maintenance préventive
+            Cf <- Cf + param$cmp
+        }
+        
+        if (info) {
+            print(paste("Temps courant",t))
+            print(paste("Coût actuel",Cf))
+            print("---")
+        }
+    }
+    
+    return(Cf)
+}
+
+
+```
+
+On peut donc simuler une seule trajectoire du système :
+```{r}
+parametres <- list(H = 102*365, # on observe sur 102 ans
+                   x = 3*365, # on effectue une maintenance préventive tous les
+                   #trois ans
+                   scale = 3 * 365, # eta en jours
+                   shape = 2.5, # sans unités
+                   cmc = 1000, # euros
+                   cmp = 200) # euros
+realisation_trajectoire_sys1(parametres)
+```
+
+
