@@ -1,6 +1,6 @@
-/.*_cache/*
-/.*_files/*
-.*.html
+*_cache*
+*_files*
+*.html
 
 .Rhistory
 .RData
