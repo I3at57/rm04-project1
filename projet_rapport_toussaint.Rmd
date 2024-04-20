@@ -24,6 +24,8 @@ library(magrittr, warn.conflicts = FALSE)
 ```{r child = './content/exe3.Rmd'}
 ```
 
-
 ```{r child = './content/exe4.Rmd'}
+```
+
+```{r child = './content/exe6.Rmd'}
 ```

@@ -119,63 +119,167 @@ realisation_trajectoire_sys1 <- function(param, info = FALSE) {
     
     i <- 1 # un indice
     
-    while (t < param$H) {
+    while (t < param$H & i < length(echeancier)) {
         next_panne <- t + realisation_aleatoire_weibull(scale = param$scale,
                                                        shape = param$shape)
-        if (info) {
-            # debug
-            print(paste("Temps courant",t))
-            print(paste("Date de la prochaine panne : ",next_panne))
-            print(paste(
-                "Date de la prochaine maintenance préventive : ",
-                echeancier[i]))
-        }
-        
-        if (next_panne < echeancier[i]) {
-            # Dans ce cas la prochaine panne si on laisse vivre le système
-            # arrive avant la prochaine maintenance préventive
-            # donc on effectue la maintenance corrective
+        # if (i < length(echeancier)) {
+            if (info) {
+                # debug
+                print(paste("Temps courant",t))
+                print(paste("Date de la prochaine panne : ",next_panne))
+                print(paste(
+                    "Date de la prochaine maintenance préventive : ",
+                    echeancier[i]))
+            }
             
-            if (info) {print("MC")}
+            if (next_panne < echeancier[i]) {
+                # Dans ce cas la prochaine panne si on laisse vivre le système
+                # arrive avant la prochaine maintenance préventive
+                # donc on effectue la maintenance corrective
+                
+                if (info) {print("MC")}
+                
+                # on met à jour le temps courant
+                t <- next_panne
+                # on effectue une maintenance corrective
+                Cf <- Cf + param$cmc
+            } else {
+                
+                if (info) {print("MP")}
+                
+                # on effecute la maintenance préventive avant une survenue de panne
+                t <- echeancier[i]
+                i = i + 1
+                # on effectue une maintenance préventive
+                Cf <- Cf + param$cmp
+            }
             
-            # on met à jour le temps courant
-            t <- next_panne
-            # on effectue une maintenance corrective
-            Cf <- Cf + param$cmc
-        } else {
-            
-            if (info) {print("MP")}
-            
-            # on effecute la maintenance préventive avant une survenue de panne
-            t <- echeancier[i]
-            i = i + 1
-            # on effectue une maintenance préventive
-            Cf <- Cf + param$cmp
-        }
-        
-        if (info) {
-            print(paste("Temps courant",t))
-            print(paste("Coût actuel",Cf))
-            print("---")
-        }
+            if (info) {
+                print(paste("Temps courant",t))
+                print(paste("Coût actuel",Cf))
+                print(paste("val de i",i))
+                print("---")
+            }
+        # }
     }
     
     return(Cf)
 }
-
-
 ```
 
 On peut donc simuler une seule trajectoire du système :
 ```{r}
-parametres <- list(H = 102*365, # on observe sur 102 ans
-                   x = 3*365, # on effectue une maintenance préventive tous les
+parametres <- list(H = 1000, # on observe sur 1002 ans
+                   x = 3, # on effectue une maintenance préventive tous les
                    #trois ans
-                   scale = 3 * 365, # eta en jours
+                   scale = 3, # eta en jours
                    shape = 2.5, # sans unités
                    cmc = 1000, # euros
                    cmp = 200) # euros
 realisation_trajectoire_sys1(parametres)
 ```
 
+Cette trajectoire nous donne un coût total de $301800€$.
 
+On peut ensuite construire une fonction pour calculer le coût
+moyen unitaire pour une liste de paramètre donnés.
+
+```{r}
+compute_mean_cost_by_time <- function(p = 10000, param_sys) {
+  
+  # Calcul un coût moyen par unité de temps Cinf(x)
+  # On chaque trajectoire est divisée par H, l'horizon de simulation
+  
+  frame <- replicate(
+    p, realisation_trajectoire_sys1(param = param_sys, info = FALSE))
+  frame <- mean(frame/param_sys$H)
+  return(frame)
+}
+```
+
+On peut ensuite calculer le coût moyen pour les paramètres suivants :
+
+- $H$ : 1000 ans
+- $x$ : 3 ans (on effectue une MP tout les trois ans)
+- $\eta= 3 ans$
+- $\beta = 2.5$
+- $cmc = 1000$, coût d'une maintenance corrective à 1000€
+- $cmp = 200$, coût d'une maintenance préventive égale à 200€
+
+```{r}
+compute_mean_cost_by_time(p = 10000, param_sys = parametres)
+```
+
+On va maintenant chercher à tracer l'évolution du coût moyen en fonction
+du paramètre $x$ : le temps de cycle entre chaque maintenance préventive.
+
+```{r}
+list_x <- seq(1,5,0.2)
+parametres <- list(H = 1000, # on observe sur 1002 ans
+                   x = 0, # on effectue une maintenance
+                   #préventive tous les trois ans
+                   scale = 3, # eta en jours
+                   shape = 2.5, # sans unités
+                   cmc = 1000, # euros
+                   cmp = 200) # euros
+list_simu <- c()
+
+for (x in list_x) {
+  print(x)
+  parametres$x <- x
+  list_simu <- c(list_simu,
+                 compute_mean_cost_by_time(p = 1000,
+                                           param_sys = parametres))
+}
+
+plot(x = list_x, y = list_simu)
+```
+
+```{r}
+list_x <- seq(1,2,0.1)
+parametres <- list(H = 1000, # on observe sur 1002 ans
+                   x = 0, # on effectue une maintenance
+                   #préventive tous les trois ans
+                   scale = 3, # eta en jours
+                   shape = 2.5, # sans unités
+                   cmc = 1000, # euros
+                   cmp = 200) # euros
+list_simu <- c()
+
+for (x in list_x) {
+  print(x)
+  parametres$x <- x
+  list_simu <- c(list_simu,
+                 compute_mean_cost_by_time(p = 1000,
+                                           param_sys = parametres))
+}
+
+plot(x = list_x, y = list_simu)
+```
+
+```{r}
+list_x <- seq(1.4,1.6,0.02)
+parametres <- list(H = 1000, # on observe sur 1002 ans
+                   x = 0, # on effectue une maintenance
+                   #préventive tous les trois ans
+                   scale = 3, # eta en jours
+                   shape = 2.5, # sans unités
+                   cmc = 1000, # euros
+                   cmp = 200) # euros
+list_simu <- c()
+
+for (x in list_x) {
+  print(x)
+  parametres$x <- x
+  list_simu <- c(list_simu,
+                 compute_mean_cost_by_time(p = 1000,
+                                           param_sys = parametres))
+}
+
+plot(x = list_x, y = list_simu)
+```
+
+Notre $x$ optimal se trouve proche de 1.45.
+
+On peut donc conclure qu'avec ce jeu de paramètre, on minimise le coût total
+en choisissant un $x=1.45 ans$.

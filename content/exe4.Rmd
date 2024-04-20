@@ -803,5 +803,3 @@ estim_param_sys4_mv
 Nos deux approximations sont assez proches mais avec une loi comme la loi de
 Weibull, la moindre variation du paramètre (notamment pour $\beta$)
 peut avoir une incidence certaine sur les performances dur modèle choisit.
-
-On peut calculer les $MTTF$ selon les deux modèles trouvés :
