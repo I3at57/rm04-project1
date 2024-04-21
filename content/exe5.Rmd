@@ -1,5 +1,6 @@
 ---
 output:
+  pdf_document: default
   html_document: default
 ---
 
@@ -45,7 +46,7 @@ realisation_aleatoire_weibull <- function(scale = 1, shape = 1) {
 ```
 
 
-## Partie 1 : Un composant
+## Partie 1 : Système à un composant
 
 Dans cette première partie on ne traite qu'un composant : une ampoule. Cette
 dernière a une durée de vie qui suit une loi de Weibull de paramètres $\eta = 3an$
@@ -179,10 +180,10 @@ parametres <- list(H = 1000, # on observe sur 1002 ans
 realisation_trajectoire_sys1(parametres)
 ```
 
-Cette trajectoire nous donne un coût total de $300400€$.
+Cette trajectoire nous donne un coût total de 300 400€, ce donne un coût moyen de 300,4€ par ans.
 
 On peut ensuite construire une fonction pour calculer le coût
-moyen unitaire pour une liste de paramètre donnés.
+moyen unitaire moyen pour une liste de paramètre donnée.
 
 ```{r}
 compute_mean_cost_by_time <- function(p = 10000, param_sys) {
@@ -258,7 +259,7 @@ On voit que l'optimum se trouve entre $x=1an$ et $x=2ans$. On peut rafiner la
 simulation.
 
 ```{r}
-x_values <- seq(1,2,0.1)
+x_values <- seq(1,2,0.1) # entre 1 et 2
 parametres <- list(H = 1000, # on observe sur 1002 ans
                    x = 0, # on effectue une maintenance
                    #préventive tous les trois ans
@@ -270,7 +271,7 @@ plot_mean_cost_evolution(list_x = x_values, param = parametres)
 ```
 
 ```{r}
-x_values <- seq(1.25,1.5,0.02)
+x_values <- seq(1.25,1.5,0.02) #entre 1.25 et 1.5
 parametres <- list(H = 1000, # on observe sur 1002 ans
                    x = 0, # on effectue une maintenance
                    #préventive tous les trois ans
@@ -282,7 +283,7 @@ plot_mean_cost_evolution(list_x = x_values, param = parametres)
 ```
 
 ```{r}
-x_values <- seq(1.35,1.47,0.01)
+x_values <- seq(1.35,1.47,0.01) # entre 1.35 et 1.47
 parametres <- list(H = 1000, # on observe sur 1002 ans
                    x = 0, # on effectue une maintenance
                    #préventive tous les trois ans

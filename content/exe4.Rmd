@@ -81,6 +81,7 @@ On obtient les $T_i$ en faisant la somme cumulée des $x_i$ ce qui donne :
 $$
 \forall i \in [1,n] : T_i = \sum_{k=1}^{i} x_k
 $$
+> Attention : durant cet exercice, je n'utilise pas les estimateurs non biaisés.
 
 ### Échantillon n°1
 
@@ -109,10 +110,10 @@ ggplot() +
 ```
 
 D'après les deux graphiques précédent, on peut supposer que la variable aléatoire
-dont est issue l’échantillon n°1 ne présente pas de tendance : il semble que les
+dont est issu l’échantillon n°1 ne présente pas de tendance : il semble que les
 dates de pannes (et donc les durées inter-pannes) sont uniformément distribuées.
 
-#### Tendance
+#### Tendance \
 
 Si les $X_i$ (ou $T_i$) sont $iid$, l’échantillon ne possède aucune tendance.
 On va donc tester l'hypothèse selon laquelle notre échantillon est $iid$ pour
@@ -194,15 +195,12 @@ On a bel et bien $|U| < 1.96$, on ne rejette donc pas $H_0$
 et on peut conclure que la série de mesure ne possède pas de
 tendance.
 
-#### Adéquation à la loi exponentielle
+#### Adéquation à la loi exponentielle \
 
 Le test précédent nous confirme qu'il n'y a pas de tendance.
-
 On peut alors tester l'adéquation des données avec une loi
 exponentielle.
-
 On peut utiliser un test de Bartlett que l'on doit programmer.
-
 Le test se présente ainsi :
 
 $$
@@ -241,6 +239,8 @@ $$
 ```{r}
 compute_bartlett_stat <- function(tn, xi) {
   
+  # Fonction qui calcule la statistique de test du test de Bartlett
+  
   n <- length(xi)
   
   2*n*(log(tn/n)-sum(log(xi))/n)/(1+((n+1)/(6*n))) %>% return()
@@ -252,13 +252,13 @@ compute_bartlett_stat <- function(tn, xi) {
 compute_bartlett_stat(df[n,"ti_sys1"], df[,"xi_sys1"])
 ```
 
-On cherche alors le quantile de la loi du $\chi^2$ :
+On cherche alors les quantiles de la loi du $\chi^2$ :
 
 ```{r}
 qchisq(p = 0.025, n-1)
 qchisq(p = 0.975, n-1)
 ```
-
+On a : $161.83 < 183.63 < 239.96$.
 Dans ce cas on ne va pas rejeter $H_0$ et considérer que
 l'échantillon est issu d'un processus de poisson homogène (PPH).
 
@@ -297,7 +297,7 @@ l'on notera $\hat{\lambda}_{gph}^{sys1}$
 On a un $R^2=0.99$ ce qui permet de renforcer la conclusion selon laquelle
 l'échantillon est issue d'une loi exponentielle.
 
-#### Estimation des paramètres
+#### Estimation des paramètres \
 
 On peut ensuite chercher à estimer les paramètres
 
@@ -313,7 +313,11 @@ Nos deux estimateurs : $\hat{\lambda}_{mm}^{sys_{1}} \simeq 0.1541832$
 et $\hat{\lambda}_{gph}^{sys1} \simeq 0.165511$
 sont très proches quoi que légèrement différents.
 
-#### Représentation graphique des deux modèles
+\newpage
+
+#### Représentation graphique des deux modèles \
+
+On peut tracer les fonctions de survie des deux modèles trouvés.
 
 ```{r}
 estim_param_sys1_gph = 0.165511
@@ -332,33 +336,21 @@ ggplot() +
        et en bleu pour le lambda trouvé par adéquation graphique.")
 ```
 
-On remarque que la courbe rouge semple mieux correspondre aux données.
-
-```{r}
-ggplot() +
-  geom_point(aes(
-      x = df[,"xi_sys1"],
-      y = estim_param_sys1_mm*exp(-1*estim_param_sys1_mm*df[,"xi_sys1"])
-    ),
-    shape = 3,
-    color = 'black') +
-  geom_line(aes(t, dexp(t,estim_param_sys1_mm)), color = 'red') +
-  geom_line(aes(t, dexp(t,estim_param_sys1_gph)), color = 'blue') +
-  xlim(0,5) +
-  ylim(0,0.17) +
-  labs(x = "t",
-       y = "R(t)")
-```
-
-#### Conclusion
+#### Conclusion \
 
 On peut donc conclure que l'échantillon n°1 est issue d'un système suivant une
-loi exponentielle de paramètre $\lambda = 0.1541832$ donc de moyenne 
+loi exponentielle de paramètre $\lambda \in [0.1541832;0.165511]$ donc de moyenne 
 (nous de disposons pas des unités) :
 
 ```{r}
 1/estim_param_sys1_mm
+1/estim_param_sys1_gph
 ```
+
+Donc $MTTF_{sys_{1}} \in [6.041894; 6.485791]$ (attention, il ne s'agit pas
+ici d'un intervalle de confiance).
+
+Sur un cas réel, il faudrait trancher entre ces deux estimateurs.
 
 ### Échantillon n°2
 
@@ -386,7 +378,7 @@ ggplot() +
 On peut encore supposer une absence de tendance au vu de la répartition des
 pannes.
 
-#### Tendance
+#### Tendance \
 
 Pour observer la tendance on peut utiliser le test de Laplace.
 
@@ -396,7 +388,7 @@ compute_laplace_stat(df[,"ti_sys2"])
 
 Là encore, on est en dessous de 1.96, on peut conclure à l'absence de tendance.
 
-#### Adéquation à la loi exponentielle
+#### Adéquation à la loi exponentielle \
 
 On réalise un test de Bartlett :
 
@@ -414,7 +406,7 @@ qchisq(p = 0.975, n-1)
 
 Donc la loi exponentielle ne semble pas adéquate à cet échantillon.
 
-#### Adéquation à la loi de Weibull par maintenance parfaite
+#### Adéquation à la loi de Weibull par maintenance parfaite \
 
 On peut alors tester l'hypothèse selon laquelle la variable aléatoire dont
 l'échantillon est issue suit une loi de Weibull avec réparation parfaite.
@@ -460,7 +452,7 @@ Processus de Poisson Homogène (PPH) de type Weibull avec maintenance parfaite.
 
 On peut effectuer deux estimations des paramètres.
 
-#### Estimation des paramètres
+#### Estimation des paramètres \
 
 Graphiquement on a :
 $$
@@ -487,7 +479,8 @@ estim_param_sys2_mv$beta
 
 Les deux estimations sont très proches.
 
-#### Représentation graphique des deux modèles
+#### Représentation graphique des deux modèles \
+
 ```{r}
 t = seq(0,15,0.001)
 ggplot() +
@@ -535,7 +528,7 @@ ggplot() +
 Les deux solutions offrent des résultats similaires, la différence est
 au centième.
 
-#### Conclusion
+#### Conclusion \
 
 l'échantillon n°2 est issue d'une variable aléatoire suivant une loi de Weibull.
 Nous disposons de deux estimations de paramètres :
@@ -588,7 +581,7 @@ ggplot() +
 
 A première vue il n'y a pas de tendance dans le jeu de données.
 
-#### Tendance
+#### Tendance \
 
 Pour observer la tendance on peut utiliser le test de Laplace.
 
@@ -598,7 +591,7 @@ compute_laplace_stat(df[,"ti_sys3"])
 
 Là encore, on est en dessous de 1.96, on peut conclure à l'absence de tendance.
 
-#### Adéquation à la loi exponentielle
+#### Adéquation à la loi exponentielle \
 
 On réalise un test de Bartlett :
 
@@ -620,7 +613,7 @@ obtenus par la suite.
 On conclue donc que la loi exponentielle n'est pas adaptée pour modéliser ces
 données.
 
-#### Adéquation à la loi de Weibull par maintenance parfaite
+#### Adéquation à la loi de Weibull par maintenance parfaite \
 
 On réutilise la même idée que pour le second échantillon : on passe par l'
 adéquation graphique.
@@ -639,20 +632,20 @@ ggplot() +
          title = "Test par adéquation graphique")
 ```
 
-La droite ne *fit* pas parfaitement avec les données
-mais reste plutôt bonne. On peut ajouter la resgression
+La droite ne  pas parfaitement avec les données
+mais reste plutôt bonne. On peut ajouter la régression
 linéaire à l'analyse :
 
 ```{r}
 lm(nuage3$formula~nuage3$x) %>% summary()
 ```
 
-On peut considérer au vu du $R^2$ et de la $p_{value} que la loi de Weibull est adaptée à modéliser ces données.
+On peut considérer au vu du $R^2$ et de la $p_{value}$ que la loi de Weibull est adaptée à modéliser ces données.
 
 On peut donc conclure que l'échantillon n°2 est issus d'un
 Processus de Poisson Homogène (PPH) de type Weibull avec maintenance parfaite.
 
-#### Estimation des paramètres
+#### Estimation des paramètres \
 
 ```{r}
 beta = 1.09692
@@ -674,7 +667,7 @@ Dans ce cas, on a une incohérence entre les deux estimations pour la valeur
 de $\beta$. Il faut donc rejeter l'hypothèse selon laquelle ces données seraient
 issues d'une loi de Weibull.
 
-#### Conclusion
+#### Conclusion \
 
 Plus d'analyse devraient être menées pour conclure sur ce jeu de données.
 
@@ -706,9 +699,9 @@ ggplot() +
 
 Il semble presque *évident* que ces données sont issues d'une loi avec tendance.
 
-#### Tendance
+#### Tendance \
 
-Pour observer la tendance on peut utiliser le test de Laplace.
+Pour conclure sur la tendance on peut utiliser le test de Laplace.
 
 ```{r}
 compute_laplace_stat(df[,"ti_sys4"])
@@ -726,7 +719,7 @@ compute_laplace_stat(df[,"ti_sys4"]) > qnorm(p = 1-0.05, mean = 0, sd = 1)
 On est donc dans un système avec décroissance de fiabilité car la statistique
 de test $U$ est plus grande que le quantile de niveau $1-0.05=0.95$.
 
-#### Adéquation à la loi de Weibull avec maintenance minimale
+#### Adéquation à la loi de Weibull avec maintenance minimale \
 
 Dans le cas d'une tendance de fiabilité décroissante on peut d'abord tester une
 l'adéquation à une loi de Weibull avec maintenance minimale.
@@ -764,7 +757,7 @@ lm(nuage4$formula~nuage4$x) %>% summary()
 
 On a une faible $p_{value}$ et un $R^2=0.9891$. Le modèle choisit semble pertinent.
 
-#### Estimation des paramètres
+#### Estimation des paramètres \
 
 On a donc :
 
@@ -803,3 +796,50 @@ estim_param_sys4_mv
 Nos deux approximations sont assez proches mais avec une loi comme la loi de
 Weibull, la moindre variation du paramètre (notamment pour $\beta$)
 peut avoir une incidence certaine sur les performances dur modèle choisit.
+
+#### Représentation graphique des deux modèles \
+
+```{r}
+t = seq(0,0.10,0.0001)
+p <- ggplot() +
+  geom_line(
+    aes(t, 1-pweibull(t,
+                    shape = estim_param_sys4_gph$beta,
+                    scale = estim_param_sys4_gph$alpha)),
+    color = 'red') +
+  geom_line(
+    aes(t, 1-pweibull(t,
+                    shape = estim_param_sys4_mv$beta,
+                    scale = estim_param_sys4_mv$alpha)),
+    color = 'blue') +
+  labs(x = "t",
+       y = "R(t)",
+       title = "Comparaison entre deux courbes de la
+       loi de Weibull pour deux estimation des paramètres",
+       subtitle = "En rouge pour les paramètres calculé par adéquation graphique et
+       en bleu par maximum de vraisemblance.")
+
+p
+```
+
+```{r}
+a <- (
+  (1-pweibull(t,
+           shape = estim_param_sys4_gph$beta,
+           scale = estim_param_sys4_gph$alpha)) -
+    (1-pweibull(t,
+           shape = estim_param_sys4_mv$beta,
+           scale = estim_param_sys4_mv$alpha))
+)
+
+p + geom_line(aes(x = t, y = a), color = 'yellow') +
+  labs(subtitle = "En jaune la différence entre les deux lois")
+```
+Il y a entre les deux lois une différence de presque 40% au plus (pour des valeurs de durée inter-panne proches de 0.025).
+
+#### Conclusion \
+
+Il semble que les données proviennent d'une loi de Weibull avec tendance.
+
+Le système suit donc un processus de poisson non homogène.
+

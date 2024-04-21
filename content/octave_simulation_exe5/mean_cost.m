@@ -3,7 +3,7 @@ source trajectoire_aleatoire.m
 
 function retval = mean_cost( p = 10000,
   param = struct ("H",1000,"x",3,"scale",1,"shape",1,"cmp",200,"cmc",1000),
-  bytime = true )
+  bytime = true );
 
   trajectoires = [];
   retval = 0;
@@ -12,8 +12,8 @@ function retval = mean_cost( p = 10000,
   endfor
 
   if bytime
-    retval = mean(retval/param.H)
+    retval = mean(trajectoires/param.H);
   else
-    retval = mean(retval)
+    retval = mean(trajectoires);
   endif
 endfunction

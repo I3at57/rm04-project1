@@ -67,6 +67,7 @@ lambda_B = 5 # ans-1
 # nombre de réplications
 p = 10000
 
+# Pour simplifier l'affichage des simulations plus loin.
 message_mttf_simule_a = "MTTF simulé en années : %f"
 message_mttf_simule_j = "MTTF simulé en jours : %f"
 ```
@@ -101,13 +102,17 @@ Dans ce cas on peut maintenant estimer le $MTTF$ de ce système par simulation :
 ```{r exe3-sys1-mttf}
 simulation <- replicate(p,exe3_sys1_panne(lambda_A,lambda_B)) %>% mean()
 
+# Afficher les résultats de simuation
 sprintf(message_mttf_simule_a, simulation)
 sprintf(message_mttf_simule_j, simulation * 365)
 ```
 
-### Système avec B en redondance uniquement \
+Donc ce première système tombe en panne en moyenne en 61.76 jours.
 
-On a donc un système série/parallèle. Dans ce cas :
+### Système avec B en redondance uniquement
+
+Cette fois, on a un système série/parallèle avec A puis deux composants
+B en parallèles. Dans ce cas :
 
 - $T_{sys_{2}} = min(T_A ,max(T_B , T_{B}'))$
 
@@ -145,9 +150,9 @@ sprintf(message_mttf_simule_j, simulation * 365)
 
 On retrouve bien un résultat proche de la valeur théorique.
 
-### Système en redondance haut-niveau \
+### Système en redondance haut-niveau
 
-Dans ce cas on a un système parallèle/série avec :
+Dans ce cas on a un système parallèle/série avec deux séries A-B en paralèlles :
 
 - $T_{sys_{3}} = max(min(T_A,T_B),min(T_{A}',T_{B}'))$
 - $R_{sys_{3}} = 2e^{-(\lambda_A+\lambda_B)t}-e^{-2(\lambda_A+\lambda_B)t}$
@@ -178,7 +183,7 @@ sprintf(message_mttf_simule_a, simulation)
 sprintf(message_mttf_simule_j, simulation * 365)
 ```
 
-### Système en redondance bas niveau \
+### Système en redondance bas niveau
 
 Dans ce cas on a un système parallèle/série avec :
 

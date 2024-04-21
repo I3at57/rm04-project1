@@ -5,12 +5,14 @@ date: "`r Sys.Date()`"
 output:
     pdf_document:
         toc: true
-        toc_depth: 3
+        toc_depth: 4
 ---
 
 ```{r setup, include=FALSE}
 # Chunk de code utile pour la compilation du markdown
-knitr::opts_chunk$set(echo = TRUE, cache = TRUE)
+knitr::opts_chunk$set(echo = TRUE,
+                      cache = TRUE,
+                      fig.align='center')
 
 # Les librairies utiles
 

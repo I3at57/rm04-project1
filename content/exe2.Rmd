@@ -32,7 +32,7 @@ de paramètre lambda
 
 2. On calcule $T_S = max(T_1,...,T_n)$ (car la structure est parallèle).
 
-\
+## Fonctions utilisées
 
 ```{r exercice2-fonctions-utiles}
 
@@ -68,6 +68,8 @@ exe2_simu_mttf_system <- function(n,taux,p) {
 # spécifique.
 exe2_theoric_mttf_system <- function(n, taux) {return(sum(1/1:n)/taux)}
 ```
+
+## Explications
 
 La fonction `exe2_simu_panne_systeme` ci-dessus retourne une réalisation de panne du système pour
 $n$ et $\lambda$.
