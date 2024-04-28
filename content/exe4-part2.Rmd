@@ -1,0 +1,156 @@
+---
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r exercice4-setuppt2, message=FALSE, warning=FALSE, include=FALSE}
+knitr::opts_chunk$set(cache = TRUE)
+```
+
+```{r exe4-librarypt2, include=FALSE}
+library(ggplot2, warn.conflicts = FALSE) # Pour les graphiques
+library(magrittr, warn.conflicts = FALSE) # Pour l'opérateur pipe : %>%
+library(dplyr, warn.conflicts = FALSE) # Pour la manipulation de dataframe
+library(goft, warn.conflicts = FALSE)
+library(EWGoF)
+```
+
+```{r exercice4pt2-clean-memory, message=FALSE, warning=FALSE, include=FALSE}
+# Pour régler la génération aléatoire et conserver les mêmes
+# valeurs à la compilation
+set.seed(54684)
+
+# Block de code pour effacer le contenu de la mémoire, utile à la compilation
+rm(list = ls())
+```
+
+\newpage
+
+## Partie 2 : Données réelles
+
+Dans cette partie on étudie un jeu de données issu de l'industrie. Les deux jeux
+de données sont issus de l'ouvrage : <ins>Stochastic Ageing and Dependence for Reliability</ins>, par :
+Chin-Diew Lai et Min Xie.
+
+Les données sont :
+
+![Jeu n°1](../img/data_reelles_1.png){#id .class width=70% height=70%}
+
+![Jeu n°2](../img/data_reelles_2.png){#id .class width=70% height=70%}
+
+On va donc étudier les deux jeux l'un après l'autre.
+
+### Jeu n°1 : Nombre de cycle avant panne pour 60 appareils électriques.
+
+On commence par créer le vecteur contenant les données :
+```{r}
+nbr_cycle_avant_panne_1 <- c(14,34,59,61,69,80,123,142,165,210,381,464,479,556,574,
+                           839,917,969,991,1064,1088,1091,1174,1270,1275,1355,
+                           1397,1477,1578,1649,1702,1893,1932,2001,2161,2292,
+                           2326,2337,2628,2785,2811,2886,2993,3122,3248,3715,
+                           3790,3857,3912,4100,4106,4116,4315,4510,4584,5267,
+                           5299,5583,6065,9701)
+nbr_cycle_avant_panne_1
+```
+
+Les données ont été rangées dans l'ordre croissant et proviennent de 60 appareils
+différents que l'on peut supposer indépendants et identiquement distribués.
+
+On peut commencer par tracer les données :
+```{r}
+ggplot() +
+    geom_point(aes(x = 1:60, y = nbr_cycle_avant_panne_1)) +
+    labs(x = "n° de panne mesurée",
+         y = "Nombre de cycle avant panne",
+         title = "Représentation du nombre de cycle avant panne pour
+         chaque appareil mesuré")
+```
+
+On peut aussi tracer la fonction de répartition empirique :
+
+```{r}
+# taille de l'échantillon
+n_1 = length(nbr_cycle_avant_panne_1)
+
+plot_repartion_empirique_1 <- geom_line(aes(x = sort(nbr_cycle_avant_panne_1),
+                                            y = (1:n_1)/n_1))
+
+ggplot() + plot_repartion_empirique_1
+```
+
+Dans ce cas on ne peut pas tester absence de tendance car nous de disposons pas
+de mesures répétées pour un seul et même système mais de 60 mesures de 60
+systèmes différents.
+
+On peut ensuite calculer les estimateurs de la moyenne et de la variance de
+notre échantillon :
+$$
+\hat{m} = \frac{1}{n}\sum_{k=1}^{n}x_k \space ; \space
+\hat{S_n^2} = \frac{1}{n-1} \sum_{k=1}^n (x_k - \hat{m})^2
+$$
+```{r}
+# estimateur sans biais de l'espérance
+estim_mean_1 <- sum(nbr_cycle_avant_panne_1)/n_1
+
+# estimateur sans biais de la variance
+estim_var_1 <- sum((nbr_cycle_avant_panne_1 - estim_mean_1)^2)/(n_1 - 1)
+
+sprintf("Estimateur de la moyenne empirique : %f", estim_mean_1)
+sprintf("Estimateur de la variance empirique : %f", estim_var_1)
+```
+
+Pour la loi
+
+On peut comparer la répartition empirique avec la répartition de plusieurs
+loi connues comme la loi exponentielle ou la loi normale.
+
+```{r}
+# Répartition théorique de la loi exponentielle prenant pour paramètre
+# un lambda = 1/moyenne empirique
+plot_repartion_exp_1 <- geom_line(aes(x = seq(1,10000,0.1),
+                                      y = pexp(seq(1,10000,0.1),
+                                               rate = 1/estim_mean_1)),
+                                  color = 'red')
+
+# Répartion théorique de la loi exponentielle prenant pour paramètre
+# la moyenne empirique et la variance empirique
+
+plot_repartion_norm_1 <- geom_line(aes(x = seq(1,10000,0.1),
+                                      y = pnorm(seq(1,10000,0.1),
+                                                mean = estim_mean_1,
+                                                sd = sqrt(estim_var_1))),
+                                  color = 'green')
+    
+ggplot() +
+    plot_repartion_empirique_1 +
+    plot_repartion_exp_1 +
+    plot_repartion_norm_1 +
+    labs(x = "nombre de cycle avant panne",
+         y = "Répartion",
+         title = "Comparaison entre la répartition empirique et les des
+         distributions possibles",
+         subtitle = "En rouge la loi exponentiell et
+         en vert la loi normale")
+```
+
+La courbe en rouge (loi exponentielle) semble être plus proche que la courbe
+en vert (loi normale) des données empiriques.
+
+On peut vérifier l'hypothèse de la loi exponentielle par un
+[Test d'ajustement du $\chi^2$](https://www.bibmath.net/dico/index.php?action=affiche&quoi=c/chideuxtest.html).
+
+Je vais tester effectuer le test suivant :
+
+$$
+\left\{
+  \begin{array}{ll}
+    H_0 : \mbox{les données sont issues d'une loi exponentielle de paramètre }
+    \lambda_0 = \hat{\lambda}_{estim} = \frac{1}{\hat{m}}\\
+    H_1 : \mbox{les données ne sont pas issues d'une loi exponentielle de paramètre }
+    \lambda_0 = \hat{\lambda}_{estim} = \frac{1}{\hat{m}}
+  \end{array}
+\right.
+$$
+
+en prenant $\alpha = 0.95$

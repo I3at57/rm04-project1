@@ -25,7 +25,7 @@ rm(list = ls())
 
 \newpage
 
-# Exercice 5
+# Exercice 5, Partie 1.
 
 Cette exercice s'intéresse à la simulation et l'optimisation d'une politique de
 maintenance.

@@ -31,3 +31,6 @@ library(magrittr, warn.conflicts = FALSE)
 
 ```{r child = './content/exe5.Rmd'}
 ```
+
+```{r child = './content/exe5-part2.Rmd'}
+```

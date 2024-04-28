@@ -330,7 +330,7 @@ sprintf(message_mttf_simule_j, simulation * 365)
 Dans ce système en pont, on trouve au centre un composant $C$ de loi identique à
 $B$ donc $\lambda_C = \lambda_B$.
 
-[Système pont](../img/exe3-system.png)
+![Système pont](../img/exe3-system.png)
 
 Dans ce cas plusieurs options s'offrent à nous.
 
