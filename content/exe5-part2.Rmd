@@ -304,6 +304,7 @@ parametres <- list(H = 1000, # on observe sur 1002 ans
 plot_mean_cost_evolution(list_x = x_values, param = parametres)
 ```
 
+Il semble que la valeur optimale de $x$ est $x^* = 0.875ans$ soit $10.5mois$.
 
 ## Modèle théorique avec maintenance minimale
 
@@ -317,7 +318,7 @@ Après une panne à un instant $s$ on cherche à simuler la prochaine date
 de panne.
 
 Dans le cas initial pour simuler une date de panne d'un composant, on
-utilisait une simulation par méthode de la transormée inverse sur $F$ :
+utilisait une simulation par méthode de la transformée inverse sur $F$ :
 $$
 x_{sim} = F^{-1}(RAND) \space ; \space RAND \sim U[0,1]
 $$
@@ -431,5 +432,85 @@ ggplot() +
 ```
 
 On voit que les pannes sont de plus en plus fréquentes au fur et à mesure
-que le système vielli et il faut le "remettre en route" de plus en
+que le système vieillit et il faut le "remettre en route" de plus en
 plus fréquemment.
+
+## Nouvelle politique de maintenance
+
+Dans cette politique de maintenace, la maintenance corrective ne remplace que l'ampoule
+défectueuse.
+
+Dans ce cas on effectue une maintenance préventive que si **aucune ampoule** ne tombe en
+panne pendant une période $x$.
+
+Dans ce cas il faut changer en partie la technique de simulation. Il faut modifier
+la fonction `realisation_trajectoire_sys`
+
+```{r}
+realisation_trajectoire_sys_2 <- function(param, info = FALSE) {
+  
+    # Le temps courant
+    t <- 0
+    # Cout final actuel
+    Cf <- 0
+    i <- 1 # un indice
+    
+    if (info) {
+        print("=== Début de simulation ===")
+    }
+    
+    # On simule les dates de panne des composants
+    pannes_composants <- replicate(
+        param$n,
+        t + realisation_aleatoire_weibull(param$scale,
+                                          param$shape)
+    )
+    
+    # la prochaine date de maintenance prev
+    date_maintenance_prev <- t + param$x
+    
+    while (t < param$H) {
+        
+        if (info) {
+            # debug
+            print(paste("Temps courant",t))
+            print(paste("Date de la prochaine panne : ",next_panne))
+            print(paste(
+                "Date de la prochaine maintenance préventive : ",
+                echeancier[i]))
+        }
+        
+        if (next_panne < echeancier[i]) {
+            # Dans ce cas la prochaine panne si on laisse vivre le système
+            # arrive avant la prochaine maintenance préventive
+            # donc on effectue la maintenance corrective
+            
+            if (info) {print("MC")}
+            
+            # on met à jour le temps courant
+            t <- next_panne
+            # on effectue une maintenance corrective
+            Cf <- Cf + param$cmc
+        } else {
+            
+            if (info) {print("MP")}
+            
+            # on effecute la maintenance préventive avant une survenue de panne
+            t <- echeancier[i]
+            i = i + 1
+            # on effectue une maintenance préventive
+            Cf <- Cf + param$cmp
+        }
+        
+        if (info) {
+            print(paste("Temps courant",t))
+            print(paste("Coût actuel",Cf))
+            print(paste("val de i",i))
+            print("---")
+        }
+    }
+    
+    return(Cf)
+}
+```
+

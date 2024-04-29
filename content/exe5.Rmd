@@ -312,4 +312,4 @@ compute_mean_cost_by_time(p = 10000,
                                            cmp = 200)) # euros
 ```
 
-On a dans ce cas un coût moyen optimal de 242€ pour ans.
+On a dans ce cas un coût moyen optimal de 242€ par an.
