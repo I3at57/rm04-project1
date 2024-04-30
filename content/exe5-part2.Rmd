@@ -1,14 +1,14 @@
-```{r exercice5-setup, message=FALSE, warning=FALSE, include=FALSE}
+```{r exercice5-setup2, message=FALSE, warning=FALSE, include=FALSE}
 knitr::opts_chunk$set(cache = TRUE)
 ```
 
-```{r exe5-library, include=FALSE}
+```{r exe5-library2, include=FALSE}
 library(ggplot2, warn.conflicts = FALSE) # Pour les graphiques
 library(magrittr, warn.conflicts = FALSE) # Pour l'opérateur pipe : %>%
 library(dplyr, warn.conflicts = FALSE) # Pour la manipulation de dataframe
 ```
 
-```{r exercice5-clean-memory, message=FALSE, warning=FALSE, include=FALSE}
+```{r exercice5-clean-memory2, message=FALSE, warning=FALSE, include=FALSE}
 # Pour régler la génération aléatoire et conserver les mêmes
 # valeurs à la compilation
 set.seed(54684)
@@ -343,7 +343,7 @@ Pour simuler un nouveau temps de panne après une durée de fonctionnement
 de $s$ on va alors calculer la fonction inverse du $RUL$ : $RUL(t,s)^{-1}$
 (ou la fonction inverse de $(1-RUL(t,s)))$, ce qui est équivalent).
 
-![Schéma explicatif](../img/dessin_explicatif.png)
+[Schéma explicatif](../img/dessin_explicatif.png)
 
 Dans le cas d'un composant de loi de Weibull on a :
 $$
@@ -469,37 +469,51 @@ realisation_trajectoire_sys_2 <- function(param, info = FALSE) {
     # la prochaine date de maintenance prev
     date_maintenance_prev <- t + param$x
     
-    while (t < param$H) {
+    if (info) {
+        # debug
+        print(paste("Temps courant",t))
+        print(paste("Date de la prochaine panne : ",
+                    pannes_composants))
+        print(paste(
+            "Date de la prochaine maintenance préventive : ",
+            date_maintenance_prev))
+    }
+    
+    while (min(pannes_composants,date_maintenance_prev) < param$H) {
         
-        if (info) {
-            # debug
-            print(paste("Temps courant",t))
-            print(paste("Date de la prochaine panne : ",next_panne))
-            print(paste(
-                "Date de la prochaine maintenance préventive : ",
-                echeancier[i]))
-        }
-        
-        if (next_panne < echeancier[i]) {
-            # Dans ce cas la prochaine panne si on laisse vivre le système
-            # arrive avant la prochaine maintenance préventive
-            # donc on effectue la maintenance corrective
+        # Tant que l'on a un évènement à traiter avant la fin de l'horizon de
+        # simulation
+      
+        if (min(pannes_composants) < date_maintenance_prev) {
             
-            if (info) {print("MC")}
-            
-            # on met à jour le temps courant
-            t <- next_panne
-            # on effectue une maintenance corrective
+            # Le premier évènement à venir est une maintenance corrective
+            # Sur l'un des composants
+          
+            # On se place à la date de l'évènement
+            t <- min(pannes_composants)
+            # On effectue la maintenance corrective
             Cf <- Cf + param$cmc
+            
+            # On remet à neuf le composant on change donc sa prochaine date de
+            # panne
+            pannes_composants[which.min(pannes_composants)] <- t + 
+               realisation_aleatoire_weibull(param$scale,
+                                          param$shape)
+            
+            # On met à jour la prochaine date de maintenance préventive
+            date_maintenance_prev <- t + param$x
+            
+            if (info) {print("Maintenance corrective")}
+          
         } else {
-            
-            if (info) {print("MP")}
-            
-            # on effecute la maintenance préventive avant une survenue de panne
-            t <- echeancier[i]
-            i = i + 1
-            # on effectue une maintenance préventive
+          
+            # Dans ce cas on fait une maintenance préventive
+            t <- date_maintenance_prev
             Cf <- Cf + param$cmp
+            date_maintenance_prev <- t + param$x
+            
+            if (info) {print("Maintenance préentive")}
+          
         }
         
         if (info) {
@@ -514,3 +528,115 @@ realisation_trajectoire_sys_2 <- function(param, info = FALSE) {
 }
 ```
 
+```{r}
+parametres <- list(H = 1000, # on observe sur 1002 ans
+                   x = 3, # on effectue une maintenance préventive tous les
+                   #trois ans
+                   n = 4,
+                   scale = 3, # eta en jours
+                   shape = 2.5, # sans unités
+                   cmc = 10000, # euros
+                   cmp = 1500) # euros
+realisation_trajectoire_sys_2(parametres, info = FALSE)
+```
+
+Dans ce cas on a un coût total de 15041500€.
+
+On crée de nouvelles fonctions pour calculer le coût moyen et afficher les courbes.
+
+```{r}
+compute_mean_cost_by_time_2 <- function(p = 10000, param_sys, info = FALSE) {
+  
+    # Calcul un coût moyen par unité de temps Cinf(x)
+    # On chaque trajectoire est divisée par H, l'horizon de simulation
+  
+    frame <- c()
+    
+    for (i in 1:p) {
+        frame <- c(frame,
+                   realisation_trajectoire_sys_2(param = param_sys,
+                                                 info = info))
+    }
+    
+    frame <- mean(frame/param_sys$H)
+    return(frame)
+}
+
+plot_mean_cost_evolution_2 <- function(list_x, param, p = 1000, info = FALSE) {
+  list_simu <- c()
+  for (x in list_x) {
+    param$x <- x
+    list_simu <- c(list_simu,
+                   compute_mean_cost_by_time_2(p = p,
+                                               param_sys = param,
+                                               info = info))
+  }
+  
+  ggplot() +
+    geom_line(aes(x = list_x, y = list_simu)) +
+    labs(x = "Périodicité des maintenances",
+         y = "Coût moyen simulé",
+         title = "Évolution du coût moyen simulé suivant x")
+}
+```
+
+```{r}
+x_values <- seq(0.1,3.1,0.5)
+parametres <- list(H = 1000, # on observe sur 1002 ans
+                   x = 0, # on effectue une maintenance préventive tous les
+                   #trois ans
+                   n = 4,
+                   scale = 3, # eta en jours
+                   shape = 2.5, # sans unités
+                   cmc = 10000, # euros
+                   cmp = 1500) # euros
+plot_mean_cost_evolution_2(list_x = x_values, param = parametres, info = FALSE)
+```
+
+```{r}
+x_values <- seq(3.1,5.1,0.5)
+parametres <- list(H = 1000, # on observe sur 1002 ans
+                   x = 0, # on effectue une maintenance préventive tous les
+                   #trois ans
+                   n = 4,
+                   scale = 3, # eta en jours
+                   shape = 2.5, # sans unités
+                   cmc = 10000, # euros
+                   cmp = 1500) # euros
+plot_mean_cost_evolution_2(list_x = x_values, param = parametres, info = FALSE)
+```
+
+```{r}
+x_values <- seq(5.1,7.1,0.5)
+parametres <- list(H = 1000, # on observe sur 1002 ans
+                   x = 0, # on effectue une maintenance préventive tous les
+                   #trois ans
+                   n = 4,
+                   scale = 3, # eta en jours
+                   shape = 2.5, # sans unités
+                   cmc = 10000, # euros
+                   cmp = 1500) # euros
+plot_mean_cost_evolution_2(list_x = x_values, param = parametres, info = FALSE)
+```
+
+Il semble que les variations de coûts deviennent minimes une fois passé $x>3$ et 
+que le prix moyen se stabilise à environ 15000€ pas ans.
+
+Donc, on peut choisir n'importe qu'elle valeur de x.
+
+Ce résultat signifie qu'avec cette nouvelle stratégie, il n'y a pas d'intérêt à effectuer
+de maintenance préventive.
+
+
+```{r}
+x_values <- seq(0.1,5.1,1)
+parametres <- list(H = 1000, # on observe sur 1002 ans
+                   x = 0, # on effectue une maintenance préventive tous les
+                   #trois ans
+                   n = 4,
+                   scale = 3, # eta en jours
+                   shape = 2.5, # sans unités
+                   cmc = 10000, # euros
+                   cmp = 1500) # euros
+plot_mean_cost_evolution_2(list_x = x_values, param = parametres, info = FALSE)
+```

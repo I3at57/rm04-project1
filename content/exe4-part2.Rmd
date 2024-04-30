@@ -27,7 +27,7 @@ rm(list = ls())
 
 \newpage
 
-## Partie 2 : Données réelles
+# Partie 2 : Données réelles
 
 Dans cette partie on étudie un jeu de données issu de l'industrie. Les deux jeux
 de données sont issus de l'ouvrage : <ins>Stochastic Ageing and Dependence for Reliability</ins>, par :
@@ -41,7 +41,9 @@ Les données sont :
 
 On va donc étudier les deux jeux l'un après l'autre.
 
-### Jeu n°1 : Nombre de cycle avant panne pour 60 appareils électriques.
+## Jeu n°1 : Nombre de cycle avant panne pour 60 appareils électriques.
+
+### Première approche
 
 On commence par créer le vecteur contenant les données :
 ```{r}
@@ -137,20 +139,43 @@ ggplot() +
 La courbe en rouge (loi exponentielle) semble être plus proche que la courbe
 en vert (loi normale) des données empiriques.
 
-On peut vérifier l'hypothèse de la loi exponentielle par un
-[Test d'ajustement du $\chi^2$](https://www.bibmath.net/dico/index.php?action=affiche&quoi=c/chideuxtest.html).
+On peut ensuite appliquer l'analyse tel que l'on a fait pour les précédents jeux
+de données.
 
-Je vais tester effectuer le test suivant :
+### Présence de tendance
 
-$$
-\left\{
-  \begin{array}{ll}
-    H_0 : \mbox{les données sont issues d'une loi exponentielle de paramètre }
-    \lambda_0 = \hat{\lambda}_{estim} = \frac{1}{\hat{m}}\\
-    H_1 : \mbox{les données ne sont pas issues d'une loi exponentielle de paramètre }
-    \lambda_0 = \hat{\lambda}_{estim} = \frac{1}{\hat{m}}
-  \end{array}
-\right.
-$$
+On cherche à établir la présence d'une tendance. On peut considérer le jeu
+de donnnées comme une suite de 60 mesures d'un système avec réparation.
 
-en prenant $\alpha = 0.95$
+On peut utiliser le test de Laplace.
+
+```{r}
+compute_laplace_stat <- function(ti){
+  
+  # Prend le tableau des Ti en entrée de fonction et retourne U
+  # Fonction du test de Laplace
+  
+  n <- length(ti)
+  U <- sqrt((12)/((n-1)*ti[n]^2))*(sum(ti)-(n+1)*ti[n]/2)
+
+  U %>% as.numeric %>% return()
+  
+}
+```
+
+```{r}
+xi_1 <- nbr_cycle_avant_panne_1
+ti_1 <- cumsum(nbr_cycle_avant_panne_1)
+```
+
+```{r}
+compute_laplace_stat(xi_1)
+```
+
+```{r}
+qnorm(1-0.5/2, mean = 0, sd = 1)
+```
+
+Dans ce cas on a $\{|U| > F^{-1}_{N(0,1)}(1-\frac{\alpha}{2}) \}$
+
+On peut donc rejeter l'absence de tendance.
