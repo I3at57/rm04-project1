@@ -347,10 +347,14 @@ de $s$ on va alors calculer la fonction inverse du $RUL$ : $RUL(t,s)^{-1}$
 
 Dans le cas d'un composant de loi de Weibull on a :
 $$
-RUL(t,s) = P(T>t+s|T>s) = \frac{P(T>t+s \cap T>s)}{P(T>s)} \\
+RUL(t,s) = P(T>t+s|T>s) = \frac{P(T>t+s \cap T>s)}{P(T>s)}
+$$
+$$
 RUL(t,s) = \frac{e^{-(\frac{t+s}{\eta})^\beta}}
 {e^{-(\frac{s}{\eta})^\beta}} =
-e^{(\frac{s}{\eta})^\beta}e^{-(\frac{t+s}{\eta})^\beta}\\
+e^{(\frac{s}{\eta})^\beta}e^{-(\frac{t+s}{\eta})^\beta}
+$$
+$$
 RUL^{-1}(t,s)=\eta \left( 
 (\frac{s}{\eta})^{\beta}-ln(t)\right)^{\frac{1}{\beta}}-s
 $$
