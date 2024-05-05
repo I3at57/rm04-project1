@@ -35,9 +35,9 @@ Chin-Diew Lai et Min Xie.
 
 Les données sont :
 
-![Jeu n°1](../img/data_reelles_1.png){#id .class width=70% height=70%}
+[Jeu n°1](../img/data_reelles_1.png){#id .class width=70% height=70%}
 
-![Jeu n°2](../img/data_reelles_2.png){#id .class width=70% height=70%}
+[Jeu n°2](../img/data_reelles_2.png){#id .class width=70% height=70%}
 
 On va donc étudier les deux jeux l'un après l'autre.
 
