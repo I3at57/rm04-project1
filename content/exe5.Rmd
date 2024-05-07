@@ -27,10 +27,10 @@ rm(list = ls())
 
 # Exercice 5, Partie 1.
 
-Cette exercice s'intéresse à la simulation et l'optimisation d'une politique de
+Cet exercice s'intéresse à la simulation et l'optimisation d'une politique de
 maintenance.
 
-Je décide pour cet exercice de moi même simuler l'ensemble des loi utilisées.
+Je décide pour cet exercice de moi-même simuler l'ensemble des loi utilisées.
 
 J'utilise uniquement la fonction `runif(1)` qui me permet d'obtenir une réalisation
 de la loi uniforme entre 0 et 1.
@@ -53,7 +53,7 @@ dernière a une durée de vie qui suit une loi de Weibull de paramètres $\eta =
 (soit $3*365=1095jour$, je néglige les années bissextiles).
 (échelle) et $\beta = 2.5$ (forme).
 
-On planifie des maintenances préventives (MP) tout les $x$ jours avec un coût de $c_{mp}=200euros$.
+On planifie des maintenances préventives (MP) tous les $x$ jours avec un coût de $c_{mp}=200euros$.
 
 En cas de panne du système, on effectue une maintenance corrective (MC) d'un coût
 de $c_{mc}=1000euros$.
@@ -70,7 +70,7 @@ Sur l'intervalle de temps considéré $H$ (l'horizon de simulation). On peut pos
 
 - $T_n$ la date de la n-ième maintenance
 
-- $C_t$ le coût total des maintenances effectuées à l'intant $t$.
+- $C_t$ le coût total des maintenances effectuées à l'instant $t$.
 
 Ces trois grandeurs sont des variables aléatoires qui dépendent de $x$.
 
@@ -201,7 +201,7 @@ compute_mean_cost_by_time <- function(p = 10000, param_sys) {
 On peut ensuite calculer le coût moyen pour les paramètres suivants :
 
 - $H$ : 1000 ans
-- $x$ : 3 ans (on effectue une MP tout les trois ans)
+- $x$ : 3 ans (on effectue une MP tous les trois ans)
 - $\eta= 3 ans$
 - $\beta = 2.5$
 - $cmc = 1000$, coût d'une maintenance corrective à 1000€

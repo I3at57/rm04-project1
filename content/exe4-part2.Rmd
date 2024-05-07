@@ -145,7 +145,7 @@ de données.
 ### Présence de tendance
 
 On cherche à établir la présence d'une tendance. On peut considérer le jeu
-de donnnées comme une suite de 60 mesures d'un système avec réparation.
+de données comme une suite de 60 mesures d'un système avec réparation.
 
 On peut utiliser le test de Laplace.
 

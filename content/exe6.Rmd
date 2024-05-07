@@ -27,7 +27,7 @@ rm(list = ls())
 # Exercice 6
 
 Les données pour cet exercice sont stockées dans le fichier `RM04data.csv`.
-Commençons par charger ces données. Nous ne prennons que les lignes 5 et 6.
+Commençons par charger ces données. Nous ne prenons que les lignes 5 et 6.
 
 ```{r exercice6-retrive-data}
 # La fonction read_csv2 est issue du package readr qui permet des imports
@@ -57,7 +57,7 @@ maintenance parfaite.
 
 ## Vérification de l'hypothèse exponentielle
 
-Si les maintenance sont parfaite, on observera une absence de tendance sur les
+Si les maintenances sont parfaites, on observera une absence de tendance sur les
 durées inter-panne.
 
 Dans ce cas les $X_i$ sont $iid$.
@@ -213,7 +213,7 @@ $$
 P(z \leq w) = 1-e^{-\lambda w} \\
 P(z > w) = e^{-\lambda w} \\
 P(W \leq w | z \leq w) = 1
-\space \mbox{en effet quelque soit la valeur de y alors} \\
+\space \mbox{en effet quelle que soit la valeur de y alors} \\
 min(y,z)<w \mbox{ si } z \leq w \\
 P(W \leq w | z > w) = P(y \leq w | z > w) = 1-e^{-\mu w}
 $$

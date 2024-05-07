@@ -419,7 +419,7 @@ sprintf(message_mttf_simule_j, simulation * 365)
 
 Dans le cas de ce dernier système en redondance bas niveau, les composants $A$ suivent une 
 loi de Weibull $W(\theta=100,\beta=1.5)$ et les composants B
-suivent un lois normale : $N(\mu = 250, \sigma = 20)$.
+suivent un loi normale : $N(\mu = 250, \sigma = 20)$.
 
 Dans ce cas, en reprenant le résultat du système en redondance bas-niveau, on a :
 

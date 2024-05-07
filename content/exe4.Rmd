@@ -33,7 +33,7 @@ Les données pour cet exercice sont stockées dans le fichier `RM04data.csv`.
 Commençons par charger ces données.
 
 ```{r exercice4-retrive-data}
-# La fonction read_csv2 est issue du package readr qui permet des imports
+# La fonction read_csv2 est issu du package readr qui permet des imports
 # exports facilités dans R
 df <- read.csv("../data/RM04data.csv", sep = ',', header = FALSE)
 df <- df[1:4,]
@@ -107,7 +107,7 @@ ggplot() +
     guides(y = "none")
 ```
 
-D'après les deux graphiques précédent, on peut supposer que la variable aléatoire
+D'après les deux graphiques précédents, on peut supposer que la variable aléatoire
 dont est issu l’échantillon n°1 ne présente pas de tendance : il semble que les
 dates de pannes (et donc les durées inter-pannes) sont uniformément distribuées.
 
@@ -117,7 +117,7 @@ Si les $X_i$ (ou $T_i$) sont $iid$, l’échantillon ne possède aucune tendance
 On va donc tester l'hypothèse selon laquelle notre échantillon est $iid$ pour
 déterminer ou non la présence de tendance.
 
-Nous disposons de deux outils mathématique :
+Nous disposons de deux outils mathématiques :
 
 - le test de Laplace,
 - le test de Spearman.
@@ -157,7 +157,7 @@ $$
 \right.
 $$
 
-Si on conserve $H_0$ on en conclue que l’échantillon est issus d'un PPH, et donc
+Si on conserve $H_0$ on en conclue que l’échantillon est issu d'un PPH, et donc
 qu'il n'y a pas de tendance.
 
 On peut écrire une fonction qui calcule la statistique de test en fonction des
@@ -293,7 +293,7 @@ La valeur de la pente de la droite de régression estimée par la fonction
 l'on notera $\hat{\lambda}_{gph}^{sys1}$
 
 On a un $R^2=0.99$ ce qui permet de renforcer la conclusion selon laquelle
-l'échantillon est issue d'une loi exponentielle.
+l'échantillon est issu d'une loi exponentielle.
 
 ### Estimation des paramètres
 
@@ -329,14 +329,14 @@ ggplot() +
   labs(x = "t",
        y = "R(t)",
        title = "Comparaison entre deux courbes de la
-       loi exponentielle pour deux estimation de la valeur de lambda",
+       loi exponentielle pour deux estimations de la valeur de lambda",
        subtitle = "En rouge pour le lambda calculé par méthode des moments
        et en bleu pour le lambda trouvé par adéquation graphique.")
 ```
 
 ### Conclusion
 
-On peut donc conclure que l'échantillon n°1 est issue d'un système suivant une
+On peut donc conclure que l'échantillon n°1 est issu d'un système suivant une
 loi exponentielle de paramètre $\lambda \in [0.1541832;0.165511]$ donc de moyenne 
 (nous de disposons pas des unités) :
 
@@ -407,7 +407,7 @@ Donc la loi exponentielle ne semble pas adéquate à cet échantillon.
 ### Adéquation à la loi de Weibull par maintenance parfaite
 
 On peut alors tester l'hypothèse selon laquelle la variable aléatoire dont
-l'échantillon est issue suit une loi de Weibull avec réparation parfaite.
+l'échantillon est issu suit une loi de Weibull avec réparation parfaite.
 
 On peut vérifier cette hypothèse en par adéquation graphique.
 
@@ -443,7 +443,7 @@ lm(nuage2$formula~nuage2$x) %>% summary()
 ```
 
 Avec une $p_{value}=2.2e-16$ et un $R^2=0.9902$ on conclure à la pertinence d'effectuer
-une droite de regression sur ces données.
+une droite de régression sur ces données.
 
 On peut donc conclure que l'échantillon n°2 est issus d'un
 Processus de Poisson Homogène (PPH) de type Weibull avec maintenance parfaite.
@@ -495,7 +495,7 @@ ggplot() +
   labs(x = "t",
        y = "R(t)",
        title = "Comparaison entre deux courbes de la
-       loi de Weibull pour deux estimation des paramètres",
+       loi de Weibull pour deux estimations des paramètres",
        subtitle = "En rouge pour les paramètres calculé par adéquation graphique et
        en bleu par maximum de vraisemblance.")
 ```
@@ -516,7 +516,7 @@ ggplot() +
   labs(x = "t",
        y = "R(t)",
        title = "Comparaison entre deux courbes de la
-       loi de Weibull pour deux estimation des paramètres",
+       loi de Weibull pour deux estimations des paramètres",
        subtitle = "En rouge pour les paramètres calculé par adéquation graphique et
        en bleu par maximum de vraisemblance.") +
   xlim(2.5,3) +
@@ -528,7 +528,7 @@ au centième.
 
 ### Conclusion
 
-l'échantillon n°2 est issue d'une variable aléatoire suivant une loi de Weibull.
+l'échantillon n°2 est issu d'une variable aléatoire suivant une loi de Weibull.
 Nous disposons de deux estimations de paramètres :
 
 - $\beta = 2.58428$ et $\theta = 4.987308$ pour adéquation graphique.
@@ -793,7 +793,7 @@ estim_param_sys4_mv
 
 Nos deux approximations sont assez proches mais avec une loi comme la loi de
 Weibull, la moindre variation du paramètre (notamment pour $\beta$)
-peut avoir une incidence certaine sur les performances dur modèle choisit.
+peut avoir une incidence certaine sur les performances du modèle choisit.
 
 ### Représentation graphique des deux modèles
 
@@ -813,7 +813,7 @@ p <- ggplot() +
   labs(x = "t",
        y = "R(t)",
        title = "Comparaison entre deux courbes de la
-       loi de Weibull pour deux estimation des paramètres",
+       loi de Weibull pour deux estimations des paramètres",
        subtitle = "En rouge pour les paramètres calculé par adéquation graphique et
        en bleu par maximum de vraisemblance.")
 

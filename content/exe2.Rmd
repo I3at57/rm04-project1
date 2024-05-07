@@ -134,7 +134,7 @@ ggplot() +
          subtitle = "En rouge, les valeurs simulées pour n.")
 ```
 
-On observe donc que les valeurs simulés sont bel et bien proches des valeurs
+On observe donc que les valeurs simulées sont bel et bien proches des valeurs
 théoriques.
 
 On remarque que le $MTTF$ croit rapidement mais il semble ensuite prendre

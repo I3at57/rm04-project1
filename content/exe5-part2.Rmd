@@ -23,7 +23,7 @@ rm(list = ls())
 
 ## Présentation du problème
 
-Dans cette partie on étudie un système composé de quatres ampoules en série.
+Dans cette partie on étudie un système composé de quatre ampoules en série.
 On considère les ampoules $iid$ suivant une loi de Weibull avec $\eta = 3an$
 (paramètre d'échelle) et $\beta=2.5$ (paramètre de forme).
 
@@ -242,7 +242,7 @@ realisation_trajectoire_sys(parametres)
 
 On a donc un coût de 3 788 500€, soit un coût moyen de 378,85€ par ans.
 
-On peut ensuite calculer le coût moyen par ans avec ce système et ce jeux de
+On peut ensuite calculer le coût moyen par ans avec ce système et ce jeu de
 paramètre donné :
 - une maintenance préventive après 1 ans de fonctionnement,
 - $cmc=10000€$
@@ -309,7 +309,7 @@ Il semble que la valeur optimale de $x$ est $x^* = 0.875ans$ soit $10.5mois$.
 ## Modèle théorique avec maintenance minimale
 
 On se place maintenant dans un cas de maintenance minimale. Quand un composant (une des ampoules) tombe en panne à une date $s$, il est instantanément
-remit en marche mais son état est inchangé.
+remis en marche mais son état est inchangé.
 
 Les composants agissent donc selon une loi de Weibull avec maintenance
 minimale ce qui correspond à un processus de poisson non Homogène (NHPP).
@@ -336,7 +336,7 @@ $$
 Le résultat serait le même par symétrie axiale entre $R$ et $F$.
 
 Si le système si l'un cherche la loi du composant après un temps de vie
-de $s$ on observe alors $RUL(t,s)=P(T>t+s|T>s)$ puisque avec une
+de $s$ on observe alors $RUL(t,s)=P(T>t+s|T>s)$ puisqu'avec une
 loi uniforme sur $[0,1]$, on a $P(X>s) = P(X<1-s)$
 
 Pour simuler un nouveau temps de panne après une durée de fonctionnement
@@ -441,7 +441,7 @@ plus fréquemment.
 
 ## Nouvelle politique de maintenance
 
-Dans cette politique de maintenace, la maintenance corrective ne remplace que l'ampoule
+Dans cette politique de maintenance, la maintenance corrective ne remplace que l'ampoule
 défectueuse.
 
 Dans ce cas on effectue une maintenance préventive que si **aucune ampoule** ne tombe en
@@ -624,9 +624,9 @@ plot_mean_cost_evolution_2(list_x = x_values, param = parametres, info = FALSE)
 ```
 
 Il semble que les variations de coûts deviennent minimes une fois passé $x>3$ et 
-que le prix moyen se stabilise à environ 15000€ pas ans.
+que le prix moyen se stabilise à environ 15000€ par ans.
 
-Donc, on peut choisir n'importe qu'elle valeur de x.
+Donc, on peut choisir n'importe quelle valeur de x.
 
 Ce résultat signifie qu'avec cette nouvelle stratégie, il n'y a pas d'intérêt à effectuer
 de maintenance préventive.
